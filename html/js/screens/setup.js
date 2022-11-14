@@ -21,30 +21,31 @@ export class Setup extends HTMLElement {
   }
 
   async onGoback(e) {
-
-    try {
-      this.jQuery('sketch-slider > *').forEach(x => {
-        if ('onSave' in x) {
-          x.onSave(e);
-        }
-      });
-
-      if (e.defaultPrevented) {
-        await App.load();
+    e.settings = {};
+    this.jQuery("sketch-slider > *").forEach((x) => {
+      if ("onSave" in x) {
+        x.onSave(e);
       }
-      else {
-        if (await App.save()) {
-          Router.refresh();
-        }
-      }
-      if (e.restartRequested) {
-        const spinner = Status.wait(10000);
-        Http.json('POST', 'esp/restart').catch();
+    });
+
+    if (Object.keys(e.settings).length > 0) {
+     
+      const spinner = Status.wait();
+      try {
+        await App.settings(e.settings);
+      } catch (error) {
+        Status.error(error);
         await spinner;
-        App.reload();
       }
-    } catch (error) {
-      Status.error(error);
+
+      if (e.restartRequested) {
+        await App.wait(5000);
+        App.resatart();
+      } else {
+        spinner.close();
+      }
     }
+
+    Router.refresh();
   }
 }

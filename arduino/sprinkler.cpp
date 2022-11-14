@@ -85,20 +85,42 @@ void SprinklerControl::resume(unsigned int zone) {
 }
 
 bool SprinklerControl::fromJSON(JsonObject json) {
+  bool dirty = false;
+
   if (json.containsKey("name")) {
     Device.dispname(json["name"].as<char *>());
+    dirty = true;
   }
 
-  if (json.containsKey("chip")) {
-    Device.hostname(json["chip"].as<char *>());
+  if (json.containsKey("host")) {
+    Device.hostname(json["host"].as<char *>());
+    dirty = true;
+  }
+
+  if (json.containsKey("ssid")) {
+    console.print("ssid: ");
+    SSID = json["ssid"].as<char *>();
+    console.println(SSID);
+
+    if (json.containsKey("skey")) {
+      console.print("skey: ");
+      SKEY = json["skey"].as<char *>();
+      console.println(SKEY);
+    }
+    dirty = true;
   }
 
   if (json.containsKey("zones")) {
     Settings.fromJSON(json["zones"].as<JsonObject>());
+    save();
+    dirty = false;
+    attach();
   }
 
-  save();
-  attach();
+  if (dirty) {
+    save();
+  }
+
   return true;
 }
 
@@ -119,12 +141,10 @@ void SprinklerControl::save() {
 }
 
 void SprinklerControl::reset() {
-  console.warn("Factory reset requested.");
   Device.reset();
 }
 
 void SprinklerControl::restart() {
-  console.warn("Restart requested.");
   Device.restart();
 }
 

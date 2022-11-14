@@ -9,7 +9,7 @@ const html = `
     <form method="post" enctype="application/x-www-form-urlencoded" action="/settings">
         <input id='name' name='name' length=32 placeholder='Friendly Name'><br />
         <br />
-        <input id='chip' name='chip' length=32 placeholder='Device Name'><br />
+        <input id='host' name='host' length=32 placeholder='Device Name'><br />
     </form>
 </div>
 `
@@ -41,16 +41,16 @@ input {
 
 export class GeneralSettings extends HTMLElement {
 
-  restartRequested = false;
+  settings = {};
 
   connectedCallback() {
     this.jQuery = jQuery(this).attachShadowTemplate(style + html, ($) => {
       this.txtName = $('#name');
-      this.txtChip = $('#chip');
+      this.txtHost = $('#host');
       this.txtName.value(App.friendlyName());
-      this.txtChip.value(App.hostname());
+      this.txtHost.value(App.hostname());
       this.txtName.on('change', this.onNameChange.bind(this));
-      this.txtChip.on('change', this.onChipChange.bind(this));
+      this.txtHost.on('change', this.onHostChange.bind(this));
     });
   }
 
@@ -59,23 +59,17 @@ export class GeneralSettings extends HTMLElement {
   }
 
   async onSave(e) {
-    if (this.restartRequested) {
-      if (confirm("This will restart your device. Are you sure you want to contine?")) {
-        this.restartRequested = false;
-        e.restartRequested = true;
-      } else {
-        e.preventDefault();
-      }
+    if (Object.keys(this.settings).length > 0) {
+      e.settings = { ...e.settings, ...this.settings };
+      e.restartRequested = true;
     }
   }
 
   onNameChange(e) {
-    App.friendlyName(this.txtName.value());
-    this.restartRequested = true;
+    this.settings["name"] = this.txtName.value();
   }
 
-  onChipChange() {
-    App.hostname(this.txtChip.value())
-    this.restartRequested = true;
+  onHostChange() {
+    this.settings["host"] = this.txtHost.value();
   }
 }

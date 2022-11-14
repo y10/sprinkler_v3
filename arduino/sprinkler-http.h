@@ -129,7 +129,7 @@ void setupHttp() {
   });
 
   http.on("/api/settings/general", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
-    json(request, (String) "{ \"name\": \"" + Sprinkler.dispname() + "\", \"chip\": \"" + Sprinkler.hostname() + "\" }");
+    json(request, (String) "{ \"name\": \"" + Sprinkler.dispname() + "\", \"host\": \"" + Sprinkler.hostname() + "\" }");
   });
   http.on("/api/settings/zones", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
     json(request, Sprinkler.Settings.toJSON());
@@ -194,31 +194,30 @@ void setupHttp() {
     }
   });
 
-  if (Sprinkler.connectedWifi) {
-    ws.onEvent([&](AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
-      IPAddress ip = client->remoteIP();
-      uint32_t id = client->id();
-      String url = server->url();
-      switch (type) {
-        case WS_EVT_CONNECT:
-          Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", id, ip[0], ip[1], ip[2], ip[3], url.c_str());
-          server->text(id, "{\"connection\": \"Connected\"}");
-          Console.attach(&ws);
-          break;
-        case WS_EVT_DISCONNECT:
-          Serial.printf("[%u] Disconnected!\n", id);
-          break;
-        case WS_EVT_PONG:
-          Serial.printf("[%u] Pong [%u]: %s\n", id, len, (len) ? (char *)data : "");
-          break;
-        case WS_EVT_ERROR:
-          Serial.printf("[%u] Error (%u): %s\n", id, *((uint16_t *)arg), (char *)data);
-          break;
-      }
-    });
-    http.addHandler(&ws);
-    Console.println("*wss", "Started.");
-  }
+  ws.onEvent([&](AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+    IPAddress ip = client->remoteIP();
+    uint32_t id = client->id();
+    String url = server->url();
+    switch (type) {
+      case WS_EVT_CONNECT:
+        Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", id, ip[0], ip[1], ip[2], ip[3], url.c_str());
+        server->text(id, "{\"connection\": \"Connected\"}");
+        Console.attach(&ws);
+        break;
+      case WS_EVT_DISCONNECT:
+        Serial.printf("[%u] Disconnected!\n", id);
+        break;
+      case WS_EVT_PONG:
+        Serial.printf("[%u] Pong [%u]: %s\n", id, len, (len) ? (char *)data : "");
+        break;
+      case WS_EVT_ERROR:
+        Serial.printf("[%u] Error (%u): %s\n", id, *((uint16_t *)arg), (char *)data);
+        break;
+    }
+  });
+  http.addHandler(&ws);
+  Console.println("*wss", "Started.");
+
   http.begin();
   console.println("Started.");
 

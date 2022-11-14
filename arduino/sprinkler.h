@@ -49,7 +49,7 @@ class SprinklerControl {
   }
 
   String toJSON() {
-    return (String) "{ \"logLevel\": \"" + (String)Device.logLevel() + "\", \"name\": \"" + Device.dispname() + "\", \"chip\": \"" + Device.hostname() + "\",  \"zones\": " + Settings.toJSON() + " }";
+    return (String) "{ \"logLevel\": \"" + (String)Device.logLevel() + "\", \"name\": \"" + Device.dispname() + "\", \"ssid\": \"" + wifissid() + "\", \"host\": \"" + Device.hostname() + "\",  \"zones\": " + Settings.toJSON() + " }";
   }
 
   bool fromJSON(JsonObject json);
