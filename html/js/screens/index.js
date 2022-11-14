@@ -15,8 +15,8 @@ export class Index extends HTMLElement {
 
     connectedCallback() {
 
-        this.jQuery = jQuery(this).attachShadow(async ($) => {
-            await App.load();
+        jQuery(this).attachShadow(async ($) => {
+            this.jQuery = $;
             $(document).on('back', this.onBack.bind(this));
             $(document).on('escape', this.onEscape.bind(this));
             $(document).on('refresh', this.onRefresh.bind(this));

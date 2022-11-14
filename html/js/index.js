@@ -1,4 +1,4 @@
-import { Module } from "./system/module";
+import { App } from "./models/app";
 
 import { Index } from "./screens/index";
 import { Main } from "./screens/main";
@@ -18,7 +18,7 @@ import "./system/touch";
 import "./system/key";
 import "./system/log";
 
-Module.register({
+App.load({
     'sketch-outlet': Outlet.forRoot({
         './': {
             'main': 'sprinkler-main',
@@ -44,4 +44,4 @@ Module.register({
     'sprinkler-list': ZoneList,
     'sprinkler-zone': Zone,
     'sprinkler-app': Index,
-})
+});
