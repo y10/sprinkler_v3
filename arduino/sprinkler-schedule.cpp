@@ -119,6 +119,10 @@ SprinklerTimerConfig ScheduleDay::toConfig()
   {
     return t->toConfig();
   }
+
+  SprinklerTimerConfig cfg;
+  memset(&cfg, 0, sizeof(SprinklerTimerConfig));
+  return cfg;
 }
 
 void ScheduleDay::fromConfig(SprinklerTimerConfig &config)
