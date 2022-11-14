@@ -1,5 +1,5 @@
 import { jQuery, Router, Status, Http } from "../system";
-import { App } from "../models/app";
+import { App } from "../system/app";
 
 const html = `
 <sketch-slider>

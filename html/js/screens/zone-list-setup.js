@@ -1,7 +1,7 @@
 import { Status, Router, String } from "../system";
 import { jQuery } from "../system/jquery";
 import { Icons } from "../assets/icons";
-import { App } from "../models/app";
+import { App } from "../system/app";
 import { MAX_ZONES } from "../config";
 
 

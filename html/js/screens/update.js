@@ -1,4 +1,4 @@
-import { App } from "../models/app";
+import { App } from "../system/app";
 import { jQuery } from "../system/jquery";
 import { Http } from "../system/http";
 import { Status } from "../system/status";

@@ -1,6 +1,6 @@
 import { jQuery } from "../system/jquery";
 import { Router } from "../system/router";
-import { App } from "../models/app";
+import { App } from "../system/app";
 
 const template = (self) => `
 <div id="conainer">

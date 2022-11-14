@@ -1,6 +1,5 @@
 import { jQuery } from "../system/jquery";
 import { Router } from "../system/router";
-import { App } from "../models/app";
 
 const template = (self) => `<sprinkler-list></sprinkler-list>`;
 export class Main extends HTMLElement {

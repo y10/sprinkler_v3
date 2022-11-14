@@ -1,5 +1,5 @@
 import { jQuery } from "../system/jquery";
-import { App } from "../models/app";
+import { App } from "../system/app";
 
 const html = `
 <div class="container">

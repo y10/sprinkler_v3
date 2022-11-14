@@ -1,6 +1,6 @@
 import { jQuery } from "../system/jquery";
 import { String } from "../system"
-import { App } from "../models/app";
+import { App } from "../system/app";
 
 const style = `
 <style>

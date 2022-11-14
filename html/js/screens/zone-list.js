@@ -1,6 +1,6 @@
 import { String, Http, Wsc, jQuery } from "../system";
 import { Icons } from "../assets/icons";
-import { App } from "../models/app";
+import { App } from "../system/app";
 import { MAX_ZONES } from "../config";
 
 

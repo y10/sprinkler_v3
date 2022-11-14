@@ -1,6 +1,6 @@
 import { jQuery } from "../system/jquery";
 import { Http } from "../system/http";
-import { App } from "../models/app";
+import { App } from "../system/app";
 
 
 const html = `

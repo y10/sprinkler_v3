@@ -1,5 +1,3 @@
-import { App } from "./models/app";
-
 import { Index } from "./screens/index";
 import { Main } from "./screens/main";
 import { Menu } from "./screens/menu";
@@ -13,6 +11,8 @@ import { Snackbar } from "./controls/snackbar";
 import { Slider } from "./controls/slider";
 import { Spinner } from "./controls/spinner";
 import { Outlet } from "./controls/outlet";
+
+import { App } from "./system/app";
 
 import "./system/touch";
 import "./system/key";

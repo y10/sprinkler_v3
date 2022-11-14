@@ -1,6 +1,6 @@
 import { String, Http, Wsc } from "../system";
 import { jQuery } from "../system/jquery";
-import { App } from "../models/app";
+import { App } from "../system/app";
 
 import { TIME_LIMIT_DEFAULT } from "../config";
 

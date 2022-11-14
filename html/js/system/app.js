@@ -1,10 +1,10 @@
-import { Status } from "../system/status";
-import { Time } from "../system/time";
-import { Log } from "../system/log";
+import { Status } from "./status";
+import { Time } from "./time";
+import { Log } from "./log";
+import { Module } from "./module";
 import { Store } from "../storage";
-import { ZoneSet } from "./zoneSet";
-import { Zone } from "./zone";
-import { Module } from "../system/module";
+import { Zone } from "../models/zone";
+import { ZoneSet } from "../models/zoneSet";
 
 class AppModel {
   $settings = {};

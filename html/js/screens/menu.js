@@ -3,7 +3,7 @@ import { Http } from "../system/http";
 import { Status } from "../system/status";
 import { Router } from "../system/router";
 import { Version } from "../config";
-import { App } from "../models/app";
+import { App } from "../system/app";
 
 const template = (self) => `
 <style>

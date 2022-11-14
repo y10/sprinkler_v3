@@ -1,6 +1,6 @@
 import { jQuery, String, Status, Http } from "../system";
 import { Log } from "../system/log";
-import { App } from "../models/app";
+import { App } from "../system/app";
 
 const itemTemplate = (e) => `
 <div contenteditable="true">
