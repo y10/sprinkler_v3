@@ -39,7 +39,9 @@ void setupTime() {
   if (Sprinkler.connectedWifi) {
     setupNtp();
   } else {
+    setTime(builtDateTime);
     timeLog.println(Sprinkler.builtDateString());
+    Sprinkler.attach();
   }
 }
 
