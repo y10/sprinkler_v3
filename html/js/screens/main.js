@@ -1,24 +1,11 @@
-import { String } from "../system";
 import { jQuery } from "../system/jquery";
 import { Router } from "../system/router";
 import { App } from "../models/app";
 
-const template = (self) => `
-<div id="conainer">
-    <sketch-slider start="${self.currentIndex}">
-        ${App.zones().count() > 1 ? '<sprinkler-list></sprinkler-list>' : ''}
-        ${String.join(App.zones(), (x) => `<sprinkler-zone zone-id="${x.id}"></sprinkler-zone>`)}
-    </sketch-slider>
-</div>`;
+const template = (self) => `<sprinkler-list></sprinkler-list>`;
 export class Main extends HTMLElement {
 
     visibleMenu = false;
-
-    get currentIndex() {
-        return App.zones().count() > 1 
-             ? App.zones().currentIndex + 1
-             : 0;
-    }
 
     connectedCallback() {
         this.jQuery = jQuery(this).attachShadowTemplate(template, ($) => {
