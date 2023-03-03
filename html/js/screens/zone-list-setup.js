@@ -4,7 +4,6 @@ import { Icons } from "../assets/icons";
 import { App } from "../system/app";
 import { MAX_ZONES } from "../config";
 
-
 const template = (self) => `
 <style>
 .container {
@@ -32,21 +31,24 @@ h1 {
 </style>
 <div class="container">
   <h1>Zones</h1>
-    ${String.join([...Array(MAX_ZONES).keys()].map((o, i) => App.zones(i + 1)), x =>
-  `<sketch-checkbox zone-id="${x.id}" placeholder="Zone ${x.id}" text="${x.name}" ${x.defined() ? 'checked' : ''} >
+    ${String.join(
+      [...Array(MAX_ZONES).keys()].map((o, i) => App.zones(i + 1)),
+      (x) =>
+        `<sketch-checkbox zone-id="${x.id}" placeholder="Zone ${x.id}" text="${
+          x.name
+        }" ${x.defined() ? "checked" : ""} >
     ${Icons.sprinkler}
-  </sketch-checkbox>`)}
+  </sketch-checkbox>`
+    )}
 </div>`;
 export class ZonesSettings extends HTMLElement {
-
   connectedCallback() {
     this.jQuery = jQuery(this).attachShadowTemplate(template, ($) => {
-      $(this)
-        .on('navigate-from', this.onSave.bind(this));
+      $(this).on("navigate-from", this.onSave.bind(this));
 
-      $('sketch-checkbox')
-        .on('check', this.onZoneCheck.bind(this))
-        .on('change', this.onZoneChange.bind(this));
+      $("sketch-checkbox")
+        .on("checked", this.onZoneChecked.bind(this))
+        .on("changed", this.onZoneChanged.bind(this));
     });
   }
 
@@ -54,7 +56,7 @@ export class ZonesSettings extends HTMLElement {
     this.jQuery().detach();
   }
 
-  onZoneChange(e) {
+  onZoneChanged(e) {
     const checkbox = e.srcElement;
     const zoneid = checkbox.getAttribute("zone-id");
     if (checkbox.text) {
@@ -62,7 +64,7 @@ export class ZonesSettings extends HTMLElement {
     }
   }
 
-  onZoneCheck(e) {
+  onZoneChecked(e) {
     const checkbox = e.srcElement;
     const zoneid = checkbox.getAttribute("zone-id");
     if (checkbox.checked) {
@@ -76,6 +78,9 @@ export class ZonesSettings extends HTMLElement {
     try {
       if (await App.save()) {
         Router.refresh();
+      } else {
+        Router.refresh();
+        Status.error("Failed to save zones to the server. <a href='./index.html' taget='self'>Reload</a>");
       }
     } catch (error) {
       Status.error(error);

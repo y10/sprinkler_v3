@@ -13,7 +13,7 @@ export class ZoneSet {
     $currentId;
 
     constructor(zones) {
-        this.$zones = zones;
+        this.$zones = zones || [];
     }
 
     [Symbol.iterator]() {
@@ -69,7 +69,7 @@ export class ZoneSet {
 
         const zones = this.$zones;
 
-        if (this.count() > 1) {
+        if (this.count() > 0) {
             delete zones[zoneid]
         }
 

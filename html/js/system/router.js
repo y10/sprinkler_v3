@@ -8,8 +8,8 @@ export class Router {
         return document.dispatchEvent(new CustomEvent('back', { cancelable: true }));
     }
 
-    static navigate(screen, keep = true) {
-        return document.dispatchEvent(new CustomEvent('navigate', { cancelable: true, detail: { screen, nohistory: !keep } }));
+    static navigate(screen, options) {
+        return document.dispatchEvent(new CustomEvent('navigate', { cancelable: true, detail: { screen, options } }));
     }
 
     static refresh() {

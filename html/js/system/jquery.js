@@ -225,6 +225,7 @@ export class XQuerySelector {
                     timer = setTimeout(function () {
                         e.clicks = 1
                         e.ticks = new Date().getTime() - latesttap;
+                        e.element = x;
                         clicks = 0;
                         handler(e);
                         e.preventDefault();
@@ -233,6 +234,7 @@ export class XQuerySelector {
                     clearTimeout(timer);
                     e.clicks = clicks;
                     e.ticks = new Date().getTime() - latesttap;
+                    e.element = x;
                     clicks = 0;
                     handler(e);
                     e.preventDefault();
@@ -252,16 +254,16 @@ export class XQuerySelector {
             let clicks = 0;
             let timer;
             let latesttap;
-            let mousemove;
             x.addEventListener('mousedown', (e) => {
                 latesttap = new Date().getTime();
             })
-            x.addEventListener('click', (e) => {
+            x.addEventListener('mouseup', (e) => {
                 clicks++;
                 if (clicks === 1) {
                     timer = setTimeout(function () {
                         e.ticks = new Date().getTime() - latesttap;
                         e.clicks = 1
+                        e.element = x;
                         clicks = 0;
                         handler(e);
                         e.preventDefault();
@@ -270,6 +272,7 @@ export class XQuerySelector {
                     clearTimeout(timer);
                     e.ticks = new Date().getTime() - latesttap;
                     e.clicks = clicks;
+                    e.element = x;
                     clicks = 0;
                     handler(e);
                     e.preventDefault();
@@ -289,6 +292,8 @@ export class XQuerySelector {
         } else {
             this.onMouseClick(handler);
         }
+
+        return this;
     }
 
     /**

@@ -38,7 +38,8 @@ button {
 <div class="container">
   <button id="zones">zones</button>
   <button id="setup">general</button>
-  <button id="console">console</button>
+  <button id="schedule">schedule</button>
+  <button id="status">enabled</button>
   <button id="update">firmware update</button>
   <button id="reset">factory reset</button>
   <button id="restart">restart</button>
@@ -52,9 +53,10 @@ export class Menu extends HTMLElement {
       $('#reset').on('click', this.reset.bind(this));
       $('#restart').on('click', this.restart.bind(this));
       $('#zones').on('click', this.gotoZones.bind(this));
+      $('#schedule').on('click', this.gotoSchedule.bind(this));
       $('#setup').on('click', this.gotoSetup.bind(this));
       $('#update').on('click', this.gotoUpdate.bind(this));
-      $('#console').on('click', this.gotoConsole.bind(this));
+      $('#status').on('click', this.gotoStatus.bind(this));
       $('#info').on('click', this.gotoInfo.bind(this));
     });
   }
@@ -71,12 +73,26 @@ export class Menu extends HTMLElement {
     Router.navigate('zones');
   }
 
+  gotoSchedule() {
+    Router.navigate('schedule');
+  }
+
   gotoUpdate() {
     Router.navigate('update');
   }
 
-  gotoConsole() {
-    Router.navigate('console');
+  async gotoStatus(e) {
+    const spinner = Status.wait(5000);
+    const element = e.srcElement;
+    const command = element.innerText == "enabled" ? "disable" : "enable";
+    try {
+      await Http.json('POST', `schedule/${command}`);
+      element.innerText = element.innerText == "enabled" ? "disabled" : "enabled";
+      spinner.close();
+    } catch (error) {
+      Status.error(error);
+    } 
+    await spinner;
   }
 
   gotoInfo() {

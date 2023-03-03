@@ -1,4 +1,4 @@
-const sprinkler = `<svg width='50' height='50' fill="currentColor" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+export const sprinkler = `<svg width='50' height='50' fill="currentColor" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
 version="1.1" x="0px" y="0px" viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">
 <g>
 <path d="M81.01,24c-0.276,0-0.505-0.224-0.505-0.5S80.724,23,81,23h0.01c0.276,0,0.5,0.224,0.5,0.5S81.286,24,81.01,24z" />

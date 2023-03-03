@@ -60,32 +60,27 @@ const template = (self) => `
 </style>
 <div class="checkbox">
     <label class="checkbox-wrapper">
-        <input type="checkbox" class="checkbox-input" ${self.checked ? 'checked' : ''} ${self.disabled ? 'disabled' : ''} />
+        <input type="checkbox" class="checkbox-input" ${self.hasAttribute("checked") ? 'checked' : ''} ${self.hasAttribute("disabled") ? 'disabled' : ''} />
         <span class="checkbox-tile">
             <span class="checkbox-icon">
                 <slot></slot>
             </span>
-            <input type="text" placeholder="${self.placeholder}" value="${self.text}" ${self.readonly ? 'readonly' : ''} class="checkbox-text" />
+            <input type="text" placeholder="${self.getAttribute("placeholder")}" value="${self.getAttribute("text")}" ${self.hasAttribute("readonly") ? 'disabled' : ''} class="checkbox-text" />
         </span>
     </label>
 </div>
 `
 export class Checkbox extends HTMLElement {
 
-  #text = "";
-  #checked = false;
-  #disabled = false;
-  #readonly = false;
-
   connectedCallback() {
-    this.#text = this.getAttribute("text");
-    this.#checked = this.hasAttribute("checked");
-    this.#disabled = this.hasAttribute("disabled");
-    this.#readonly = this.hasAttribute("readonly");
-    this.placeholder = this.getAttribute("placeholder");
     this.jQuery = jQuery(this).attachShadowTemplate(template, ($) => {
-      this.checkbox = $('.checkbox-input').on('change', this.onCheck.bind(this));
-      this.textbox = $('.checkbox-text').on('change', this.onChange.bind(this)).on('click', this.onClick.bind(this));
+      this.checkbox = $('.checkbox-input')
+        .on('click', this.onCheckClick.bind(this));
+      this.textbox = $('.checkbox-text')
+        .on('focus', this.onTextFocus.bind(this))
+        .on('change', this.onChange.bind(this));
+      this.icon = $('.checkbox-icon')
+        .onClick(this.onClick.bind(this));
     });
   }
 
@@ -94,40 +89,80 @@ export class Checkbox extends HTMLElement {
   }
 
   get disabled() {
-    return this.#disabled;
+    return this.checkbox.item().disabled;
+  }
+
+  set disabled(value) {
+    return this.checkbox.item().disabled = value;
   }
 
   get readonly() {
-    return this.#readonly;
+    return this.textbox.item().readonly;
   }
 
   get checked() {
-    return this.#checked;
+    return this.checkbox.item().checked;
   }
 
   set checked(value) {
-    return this.checkbox.item().checked = this.#checked = value;
+    this.checkbox.item().checked = value;
+    this.onChecked();
+    return value;
   }
 
   get text() {
-    return this.#text;
+    return this.textbox.item().value
   }
 
   set text(value) {
-    return this.textbox.item().value = this.#text = value;
+    this.textbox.item().value = value;
   }
 
   onClick(e) {
-    this.checked = true;
+    e.cancelBubble = true;
+    e.preventDefault();
+    const {ticks, clicks} = e;
+    if (clicks > 1 || ticks > 800) 
+    {
+      this.onPick(e)
+    }
+    else
+    {
+      this.onCheck(e)
+    }
+  }
+
+  
+  async onTextFocus(e) {
+    await new Promise(done=>setTimeout(done, 800));
+    if (this.checked == false) {
+      this.checked = true;
+    }
+  }
+
+  onCheckClick(e) {
+    e.cancelBubble = true;
+    e.preventDefault();
   }
 
   onCheck(e) {
-    this.checked = e.srcElement.checked;
-    this.dispatchEvent(new Event('check'))
+    if (this.dispatchEvent(new Event('check', {cancelable: true})))
+    {
+      this.checked = !this.checked
+    }
+  }
+
+  onChecked() {
+    this.dispatchEvent(new Event('checked'))
+  }
+
+  onPick(e) {
+    if (this.dispatchEvent(new Event('pick', {cancelable: true}))) {
+      this.dispatchEvent(new Event('picked'));
+    }    
   }
 
   onChange(e) {
-    this.text = e.srcElement.value;
-    this.dispatchEvent(new Event('change'))
+    this.dispatchEvent(new Event('changed'))
   }
 }

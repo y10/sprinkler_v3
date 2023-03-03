@@ -69,7 +69,8 @@ export class Index extends HTMLElement {
     }
 
     async onNavigate(e) {
-        if (!(await this.$Outlet.item().navigate(e.detail.screen, e.detail.nohistory))) {
+        const { screen, options } = e.detail;
+        if (!(await this.$Outlet.item().navigate(screen, options))) {
             e.preventDefault();
         }
     }
@@ -91,7 +92,7 @@ export class Index extends HTMLElement {
     }
 
     open() {
-        App.zones().count() > 1 ? Router.navigate('settings') : Router.navigate('menu');
+        Router.navigate('menu');
     }
 
     render() {

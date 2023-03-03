@@ -1,3 +1,4 @@
+import { MAX_ZONES } from "../config";
 import { Status } from "./status";
 import { Time } from "./time";
 import { Log } from "./log";
@@ -9,14 +10,7 @@ import { ZoneSet } from "../models/zoneSet";
 class AppModel {
   $settings = {};
 
-  $zones = new ZoneSet({
-    1: {
-      name: "Zone 1",
-      days: {
-        all: [{ h: Time.toUtcHour(0) }],
-      },
-    },
-  });
+  $zones = new ZoneSet();
 
   /**
    * @arg value {{ name?:string, host?:string, ssid?:string }?}
@@ -70,11 +64,12 @@ class AppModel {
       if (zones && Object.keys(zones).length > 0) {
         this.$zones = new ZoneSet(zones);
       }
-    } catch {
-      console.error("Failed to load zones from the server");
+      Module.register(modules);
+    } catch(error) {
+      console.log(error);
+      Module.register(modules);
+      Status.error("Failed to load zones from the server. <a href='./index.html' taget='self'>Reload</a>");
     }
-
-    Module.register(modules);
   }
 
   async save() {
@@ -88,10 +83,10 @@ class AppModel {
       const json = await Store.put(state);
       if (json && json !== state) {
         this.$settings = { ...json };
-        if (Object.keys(json["zones"]).length > 0) {
+        if ("zones" in json && Object.keys(json.zones).length > 0) {
           this.$zones = new ZoneSet(json.zones);
+          return true;
         }
-        return true;
       }
     } catch (error) {
       Status.error(error);

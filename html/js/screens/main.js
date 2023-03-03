@@ -19,7 +19,7 @@ export class Main extends HTMLElement {
 
     onSlide(e) {
         if (e.up && this.jQuery(this).isAttached()) {
-            if (Router.navigate('menu', false)) {
+            if (Router.navigate('menu', { popup: true })) {
                 this.visibleMenu = true;
             }
         }

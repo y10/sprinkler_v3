@@ -27,7 +27,7 @@ export class Outlet extends HTMLElement {
         this.lastElement = this.defaultElement;
     }
 
-    async navigate(screen, nohistory = false) {
+    async navigate(screen, { popup: popup, params } = { popup: false, params: {} }) {
 
         const cursorstyle = document.body.style.cursor;
         const rootElement = this.rootElement;
@@ -59,8 +59,9 @@ export class Outlet extends HTMLElement {
                     lastElement.style.display = 'none';
                 }
 
+                const args = Object.keys(params || {}).map(x => `${x}='${params[x]}'`);
                 const template = document.createElement('template')
-                template.innerHTML = `<${component.name}${nohistory ? ' nohistory' : ''}></${component.name}>`;
+                template.innerHTML = `<${component.name}${popup ? ' popup' : ''}${args.length ? ' ' + args.join(' ') : ''}></${component.name}>`;
                 this.rootElement.appendChild(template.content.cloneNode(true));
                 this.lastElement = rootElement.children[rootElement.childElementCount - 1];
             }
@@ -100,7 +101,7 @@ export class Outlet extends HTMLElement {
                     to = this.router.screens(this.lastElement.tagName);
                     rootElement.removeChild(element);
                 }
-                while (this.lastElement.hasAttribute('nohistory'));
+                while (this.lastElement.hasAttribute('popup'));
 
                 if (this.lastElement == this.slotElement) {
                     this.lastElement = this.defaultElement;

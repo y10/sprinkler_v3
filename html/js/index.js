@@ -3,6 +3,7 @@ import { Main } from "./screens/main";
 import { Menu } from "./screens/menu";
 import { Zone } from "./screens/zone";
 import { ZoneList } from "./screens/zone-list";
+import { EmptyZoneList } from "./screens/zone-list-empty";
 
 import { MenuToggle } from "./controls/menu-toggle";
 import { MenuBottom } from "./controls/menu-bottom";
@@ -22,11 +23,12 @@ App.load({
     'sketch-outlet': Outlet.forRoot({
         './': {
             'main': 'sprinkler-main',
-            'menu': 'sprinkler-menu'
+            'menu': 'sprinkler-menu',
+            'zone': 'sprinkler-zone'
         },
         './js/setup.js': {
             'settings': 'sprinkler-settings',
-            'console': 'sprinkler-console',
+            'schedule': 'sprinkler-schedule',
             'update': 'sprinkler-update',
             'zones': 'sprinkler-list-setup',
             'setup': 'sprinkler-setup',
@@ -41,6 +43,7 @@ App.load({
     'sketch-menu-bottom': MenuBottom,
     'sprinkler-main': Main,
     'sprinkler-menu': Menu,
+    'sprinkler-list-empty': EmptyZoneList,
     'sprinkler-list': ZoneList,
     'sprinkler-zone': Zone,
     'sprinkler-app': Index,
