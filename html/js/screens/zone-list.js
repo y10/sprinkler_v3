@@ -33,16 +33,21 @@ h1 {
 
 </style>
 <div class="container">
-    ${App.zones().count() > 0 ? '' : '<sprinkler-list-empty></sprinkler-list-empty>'} 
-    ${String.join(
+    ${App.zones().count() > 0 ? String.join(
       [...Array(MAX_ZONES).keys()].map((o, i) => App.zones(i + 1)),
       (x) =>
         x.defined() ? 
         `<sketch-checkbox zone-id="${x.id}" placeholder="Zone ${x.id}" text="${x.name}" readonly>
           ${Icons.sprinkler}
-        </sketch-checkbox>`
-          : ""
-    )}
+        </sketch-checkbox>` : 
+        `<span style="
+          width: 7rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        ">☼</span>`
+    ) : '<sprinkler-list-empty></sprinkler-list-empty>'} 
 </div>`;
 export class ZoneList extends HTMLElement {
   connectedCallback() {

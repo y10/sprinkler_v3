@@ -1,12 +1,12 @@
 #ifndef WsConsole_h
 #define WsConsole_h
 
+#include <Arduino.h>
 #include <AsyncWebSocket.h>
 
 #include <map>
 
-#include "../../includes/StreamString.h"
-#include "Arduino.h"
+#include "../../../includes/StreamString.h"
 
 typedef enum {
   logNone = 0,

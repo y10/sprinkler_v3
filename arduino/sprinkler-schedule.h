@@ -1,19 +1,19 @@
 #ifndef SCHEDULE_H
 #define SCHEDULE_H
 
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <Ticker.h>
+#include <TimeAlarms.h>
+#include <TimeLib.h>
+
 #include <map>
 #include <vector>
-#include <Arduino.h>
-#include <Ticker.h>
-#include <TimeLib.h>
-#include <TimeAlarms.h>
-#include <ArduinoJson.h>
 
 #include "sprinkler-config.h"
 
-class SprinklerTimer
-{
-protected:
+class SprinklerTimer {
+ protected:
   timeDayOfWeek_t Day;
 
   unsigned int Duration;
@@ -21,12 +21,11 @@ protected:
   OnTick_t OnTick;
   time_t Time;
 
-public:
+ public:
   typedef std::function<void(SprinklerTimer *)> OnTimerTick;
 
   SprinklerTimer(timeDayOfWeek_t day, OnTimerTick onTick)
-      : OnTick([this, onTick]() { onTick(this); }), Day(day), Time(0), Duration(0), AlarmID(dtINVALID_ALARM_ID)
-  {
+      : OnTick([this, onTick]() { onTick(this); }), Day(day), Time(0), Duration(0), AlarmID(dtINVALID_ALARM_ID) {
   }
 
   bool isEnabled() { return Alarm.isAllocated(AlarmID); }
@@ -49,31 +48,34 @@ public:
   SprinklerTimerConfig toConfig();
 };
 
-class ScheduleDay
-{
-
-public:
+class ScheduleDay {
+ public:
   ScheduleDay(timeDayOfWeek_t day) : Day(day) {}
 
   timeDayOfWeek_t dow() { return Day; }
 
-  bool isEnabled() { return Timers.size() > 0; }
+  bool isEnabled() {
+    if (Timers.size() > 0) {
+      for (auto &timer : Timers) {
+        if (timer->isEnabled()) {
+          return true;
+        }
+      }
+    }
 
-  void enable()
-  {
-    for (auto &timer : Timers)
-    {
-      if (!timer->isEnabled())
-      {
+    return false;
+  }
+
+  void enable() {
+    for (auto &timer : Timers) {
+      if (!timer->isEnabled()) {
         timer->enable();
       }
     }
   }
 
-  void disable()
-  {
-    for (auto &timer : Timers)
-    {
+  void disable() {
+    for (auto &timer : Timers) {
       timer->disable();
     }
   }
@@ -86,15 +88,14 @@ public:
   void fromConfig(SprinklerTimerConfig &config);
   SprinklerTimerConfig toConfig();
 
-protected:
+ protected:
   timeDayOfWeek_t Day;
   std::vector<SprinklerTimer *> Timers;
   SprinklerTimer::OnTimerTick onTimerTick;
 };
 
-class SprinklerSchedule
-{
-public:
+class SprinklerSchedule {
+ public:
   ScheduleDay Everyday;
   ScheduleDay Mon;
   ScheduleDay Tue;
@@ -111,8 +112,7 @@ public:
                         Thu(dowThursday),
                         Fri(dowFriday),
                         Sat(dowSaturday),
-                        Sun(dowSunday)
-  {
+                        Sun(dowSunday) {
     days["all"] = &Everyday;
     days["mon"] = &Mon;
     days["tue"] = &Tue;
@@ -123,13 +123,10 @@ public:
     days["sun"] = &Sun;
   }
 
-  bool isEnabled()
-  {
-    for (const auto &kv : days)
-    {
+  bool isEnabled() {
+    for (const auto &kv : days) {
       ScheduleDay *day = kv.second;
-      if (day->isEnabled())
-      {
+      if (day->isEnabled()) {
         return true;
       }
     }
@@ -137,28 +134,22 @@ public:
     return false;
   }
 
-  void enable()
-  {
-    for (const auto &kv : days)
-    {
+  void enable() {
+    for (const auto &kv : days) {
       ScheduleDay *day = kv.second;
       day->enable();
     }
   }
 
-  void disable()
-  {
-    for (const auto &kv : days)
-    {
+  void disable() {
+    for (const auto &kv : days) {
       ScheduleDay *day = kv.second;
       day->disable();
     }
   }
 
-  void onTimer(SprinklerTimer::OnTimerTick onTick)
-  {
-    for (const auto &kv : days)
-    {
+  void onTimer(SprinklerTimer::OnTimerTick onTick) {
+    for (const auto &kv : days) {
       ScheduleDay *day = kv.second;
       day->onTimer(onTick);
     }
@@ -170,7 +161,7 @@ public:
   void fromConfig(SprinklerZoneConfig &config);
   SprinklerZoneConfig toConfig();
 
-private:
+ private:
   std::map<String, ScheduleDay *> days;
 };
 

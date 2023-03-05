@@ -1,7 +1,5 @@
 #include "WsConsole.h"
 
-#include "Arduino.h"
-
 std::unique_ptr<AsyncWebSocket> wss;
 logLevel_t loglevel = logInfo;
 std::map<String, WsConsole *> consoles;

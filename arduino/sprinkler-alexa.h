@@ -3,7 +3,7 @@
 
 #include "sprinkler.h"
 
-static WsConsole alexa_console("alexa");
+static WsConsole alexa_console("alxa");
 
 std::unique_ptr<fauxmoESP> fauxmo;
 
@@ -20,8 +20,7 @@ void setupAlexa() {
     // Setup Alexa devices
     if (Sprinkler.dispname().length() > 0) {
       fauxmo->addDevice(Sprinkler.dispname().c_str());
-      alexa_console.print("Added alexa device: ");
-      alexa_console.println(Sprinkler.dispname());
+      alexa_console.println("Started.");
     }
 
     fauxmo->onSet([&](unsigned char device_id, const char *device_name, bool state, unsigned char value) {

@@ -128,6 +128,22 @@ void setupHttp() {
     json(request, (String) "{\"pin\":" + pin + ", \"value\":" + val + "}");
   });
 
+  http.on("/api/schedule", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
+    json(request, (String) "{ \"state\": \"" + String(Sprinkler.isAttached() ? "enabled" : "disabled") + "\" }");
+  });
+
+  http.on("/api/schedule/{}", ASYNC_HTTP_POST, [&](AsyncWebServerRequest *request) {
+    String command = request->pathArg(0);
+    console.println("POST: /api/schedule/" + command);
+    if (command == "enable") {
+      Sprinkler.attach();
+    }
+    else {
+      Sprinkler.detach();
+    }
+    json(request, (String) "{ \"state\": \"" + String(Sprinkler.isAttached() ? "enabled" : "disabled") + "\" }");
+  });
+
   http.on("/api/settings/general", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
     json(request, (String) "{ \"name\": \"" + Sprinkler.dispname() + "\", \"host\": \"" + Sprinkler.hostname() + "\" }");
   });

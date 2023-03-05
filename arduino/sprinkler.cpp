@@ -124,6 +124,14 @@ bool SprinklerControl::fromJSON(JsonObject json) {
   return true;
 }
 
+bool SprinklerControl::isAttached() {
+  return Settings.isAttached();
+}
+
+void SprinklerControl::detach() {
+  Settings.detach();
+}
+
 void SprinklerControl::attach() {
   Settings.attach();
 }

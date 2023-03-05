@@ -8,7 +8,7 @@
 #include <map>
 #include <vector>
 
-#include "sprinkler-device-nodes.h"
+#include "sprinkler-device-wrover.h"
 #include "sprinkler-device.h"
 #include "sprinkler-settings.h"
 #include "sprinkler-state.h"
@@ -25,7 +25,7 @@ class SprinklerControl {
   bool connectedWifi = false;
 
   SprinklerControl()
-      : Device(RL1_PIN, RL2_PIN, RL3_PIN, RL4_PIN, RL5_PIN, RL6_PIN, RL7_PIN, RL8_PIN),
+      : Device(RL0_PIN, RL1_PIN, RL2_PIN, RL3_PIN, RL4_PIN, RL5_PIN, RL6_PIN, RL7_PIN),
         Settings([&](SprinklerZone *zone, SprinklerTimer *timer) { start(zone->index(), timer->duration()); }) {
   }
 
@@ -61,7 +61,9 @@ class SprinklerControl {
   void pause(unsigned int zone);
   void resume(unsigned int zone);
 
+  bool isAttached();
   void attach();
+  void detach();
   void load();
   void save();
   void reset();

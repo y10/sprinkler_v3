@@ -27,6 +27,8 @@ public:
   const String name() const { return Name; }
   void name(const char *value);
 
+  bool isAttached() { return Schedule.isEnabled(); }
+
   void attach() { Schedule.enable(); }
 
   void detach() { Schedule.disable(); }
@@ -69,6 +71,23 @@ public:
     }
 
     zones.clear();
+  }
+
+  bool isAttached()
+  {
+    if (zones.size() > 0)
+    {
+      for (const auto &kv : zones)
+      {
+        auto *zone = kv.second;
+        if (zone->isAttached())
+        {
+          return true;
+        }
+      }
+    }
+    
+    return false;
   }
 
   void detach()

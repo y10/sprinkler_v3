@@ -56,8 +56,12 @@ export class Menu extends HTMLElement {
       $('#schedule').on('click', this.gotoSchedule.bind(this));
       $('#setup').on('click', this.gotoSetup.bind(this));
       $('#update').on('click', this.gotoUpdate.bind(this));
-      $('#status').on('click', this.gotoStatus.bind(this));
+      this.$btnStatus = $('#status').on('click', this.gotoStatus.bind(this));
       $('#info').on('click', this.gotoInfo.bind(this));
+
+      if ($(this).inViewport()) {
+        this.update().catch();
+      }
     });
   }
 
@@ -86,8 +90,8 @@ export class Menu extends HTMLElement {
     const element = e.srcElement;
     const command = element.innerText == "enabled" ? "disable" : "enable";
     try {
-      await Http.json('POST', `schedule/${command}`);
-      element.innerText = element.innerText == "enabled" ? "disabled" : "enabled";
+      const state = await Http.json('POST', `api/schedule/${command}`);
+      this.update(state);
       spinner.close();
     } catch (error) {
       Status.error(error);
@@ -112,6 +116,25 @@ export class Menu extends HTMLElement {
       Http.json('POST', 'esp/reset').catch();
       await spinner;
       App.reload();
+    }
+  }
+
+  async update(options) {
+    if (!options) {
+      options = {...await this.state()};
+      console.log(options);
+    }
+
+    const {state} = options;
+    this.$btnStatus.text(state == "enabled" ? "enabled" : "disabled");
+  }
+
+  async state() {
+    try {
+      return await Http.json('GET', 'api/schedule');
+    } catch (error) {
+      console.error(error);
+      return { state: "disabled" };
     }
   }
 }
