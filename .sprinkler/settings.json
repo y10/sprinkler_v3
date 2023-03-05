@@ -1,1 +1,1 @@
-{"version":"2.0.7.0","maxZones":6,"maxTimers":2,"timeLimit":15,"firmwareUrl":"http://ota.voights.net/sprinkler_v2.bin"}
+{"version":"3.0.0.0","maxZones":6,"maxTimers":2,"timeLimit":15,"firmwareUrl":"http://ota.voights.net/sprinkler_v3.bin"}
