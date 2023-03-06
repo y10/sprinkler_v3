@@ -1,6 +1,6 @@
 # Sprinkler Controller
 
-A firmware to make an [ESP32](https://en.wikipedia.org/wiki/ESP32) device to be a sprinkler station that can control up to 6 zones **from your phone, no cloud, no app instalation needed**, just hook up it to your local wifi, set the number of zones and you are redy to go. 
+Firmware to turn your [ESP32](https://en.wikipedia.org/wiki/ESP32) device into a sprinkler station that can control up to 6 zones  **from your phone, no cloud, no app installation**, just hook up it to your local Wi-Fi network, set the number of zones and you're good to go. 
 _Written in [Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=vsciot-vscode.vscode-arduino) for Arduino IDE._
 
 If you like my **Sprinkler Controller**, give it a star, or fork it and contribute!
@@ -14,9 +14,9 @@ If you like my **Sprinkler Controller**, give it a star, or fork it and contribu
 
 1. Download the project from the github [**repository**](https://github.com/y10/sprinkler_v3).
 2. Open **Arduino IDE**, and in the preferences window set the sketch location to arduino folder located inside the project, see example:
- C:\Users\\%username%\Documents\Arduino\\_esp-sprinkler_v2_\\**arduino**
+ C:\Users\\%username%\Documents\Arduino\\_sprinkler_v3_\\**arduino**
 3. Open **Visual Studio Code** and select the project root folder, as following:
- C:\Users\\%username%\Documents\Arduino\\**_esp-sprinkler_v2_**
+ C:\Users\\%username%\Documents\Arduino\\**_sprinkler_v3**
 
 Happy coding.
 
