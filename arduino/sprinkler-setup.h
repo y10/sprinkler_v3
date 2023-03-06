@@ -1,7 +1,6 @@
 #ifndef SPRINKLER_SETUP_H
 #define SPRINKLER_SETUP_H
 
-#include "sprinkler-device-wrover.h"
 #include "sprinkler.h"
 
 void setupUnit()

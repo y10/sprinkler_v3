@@ -8,7 +8,7 @@
 #include <map>
 #include <vector>
 
-#include "sprinkler-device-wrover.h"
+#include "sprinkler-pinout.h"
 #include "sprinkler-device.h"
 #include "sprinkler-settings.h"
 #include "sprinkler-state.h"
