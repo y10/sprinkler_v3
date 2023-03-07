@@ -65,6 +65,8 @@ class SprinklerDevice {
 
   uint8_t ICACHE_RAM_ATTR toggle(uint8_t relay = 0);
 
+  void blink(float seconds);
+
   void reset();
 
   void restart();

@@ -1,6 +1,8 @@
 #include "sprinkler-device.h"
+#include "sprinkler-pinout.h"
 
 #include <WsConsole.h>
+#include <Ticker.h>
 
 #ifdef ESP8266
 #define getChipId() ESP.getChipId() 
@@ -9,6 +11,7 @@
 #endif
 
 WsConsole unitLog("unit");
+Ticker Timer;
 
 SprinklerDevice::SprinklerDevice(uint8_t RL1, uint8_t RL2, uint8_t RL3, uint8_t RL4, uint8_t RL5, uint8_t RL6, uint8_t RL7, uint8_t RL8)
     : pins({RL1, RL2, RL3, RL4, RL5, RL6, RL7, RL8}) {
@@ -152,6 +155,18 @@ uint8_t SprinklerDevice::turnOff(uint8_t relay) {
   return 255;
 }
 
+void SprinklerDevice::blink(float seconds){  
+  Timer.detach();
+  digitalWrite(LED_PIN, LOW);
+  if (seconds > 0)
+  {
+    Timer.attach(seconds, []() {
+      int state = digitalRead(LED_PIN);
+      digitalWrite(LED_PIN, !state);
+    });
+  }
+}
+
 void SprinklerDevice::reset() {
   unitLog.println("Reseting...");
   for (int i = 0; i < EEPROM.length(); i++) {
@@ -165,5 +180,5 @@ void SprinklerDevice::reset() {
 
 void SprinklerDevice::restart() {
   unitLog.println("Restarting...");
-  ESP.restart();
+  abort();
 }

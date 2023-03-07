@@ -1,8 +1,7 @@
-#include "sprinkler.h"
-
 #include <WiFi.h>
 #include <WsConsole.h>
 #include <esp_wifi.h>
+#include "sprinkler.h"
 
 WsConsole console("unit");
 
@@ -45,6 +44,7 @@ void SprinklerControl::start(unsigned int zone, unsigned int duration = 0) {
 
   Device.turnOn(zone);  // zone first
   Device.turnOn();      // engine last
+  Device.blink(0.5);
 
   Timers.start(zone, duration, [this, zone] { stop(zone); });
   fireEvent("state", Timers.toJSON(zone));
@@ -54,7 +54,8 @@ void SprinklerControl::stop(unsigned int zone) {
   console.println("Stopping timer " + (String)zone);
   if (Timers.isWatering(zone)) {
     if (Timers.count() == 1) {
-      Device.turnOff();
+      Device.turnOff(); 
+      Device.blink(0);
     }
     Device.turnOff(zone);  // zone last
     Timers.stop(zone);     // detach and remove timer
@@ -67,6 +68,7 @@ void SprinklerControl::pause(unsigned int zone) {
   if (Timers.isWatering(zone)) {
     if (Timers.count() == 1) {
       Device.turnOff();
+      Device.blink(0);
     }
     Timers.pause(zone);
     Device.turnOff(zone);
@@ -80,6 +82,7 @@ void SprinklerControl::resume(unsigned int zone) {
     Timers.resume(zone);
     Device.turnOn(zone);  // zone first
     Device.turnOn();      // engine last
+    Device.blink(0.5);
     fireEvent("state", Timers.toJSON(zone));
   }
 }

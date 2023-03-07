@@ -2,8 +2,6 @@
 #define SPRINKLER_H
 
 #include <ArduinoJson.h>
-#include <Ticker.h>
-
 #include <functional>
 #include <map>
 #include <vector>
@@ -14,6 +12,7 @@
 #include "sprinkler-state.h"
 
 class SprinklerControl {
+
  protected:
   String SSID = "";
   String SKEY = "";
