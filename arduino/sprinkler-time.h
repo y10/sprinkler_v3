@@ -15,7 +15,7 @@
 #define NTP_SERVER2 "time.nist.gov"
 #define NTP_SERVER3 "time.google.com"
 
-void setupTime();
+void setupTime(time_t t = 0);
 
 void handleTicks();
 

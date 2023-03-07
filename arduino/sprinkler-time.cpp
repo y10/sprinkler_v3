@@ -1,57 +1,48 @@
 #include "sprinkler-time.h"
 
 WsConsole timeLog("time");
-time_t builtDateTime = (time_t)0;
-time_t lastSyncTime = (time_t)0;
+time_t lastSyncTime = Sprinkler.builtDate();
+time_t builtDateTime = Sprinkler.builtDate();
 
 time_t syncTime() {
-  timeLog.println("Connecting time server...");
+  timeLog.print("Connecting..");
   int tryCount = 0;
-  while (tryCount++ < 8)  // wait for 2 seconds
+  while (tryCount++ < 12)  // wait for 3 seconds
   {
     delay(250);
-    Serial.print(".");
-    time_t t = lastSyncTime = now();
-    if (t > builtDateTime) {
-      Serial.println(".");
-      setTime(t);
-      timeLog.println((String)day(t) + " " + (String)monthShortStr(month(t)) + " " + (String)year(t) + " " + (String)hour(t) + ":" + (String)minute(t));
-      Sprinkler.attach();
-      return t;
+    timeLog.print(".");
+    lastSyncTime = time(nullptr);
+    if (lastSyncTime > builtDateTime) {
+      setupTime(lastSyncTime);
+      return lastSyncTime;
     }
   }
+
+  setupTime(builtDateTime);
   return (time_t)0;
 }
 
-void setupNtp() {
-  setSyncProvider(0);
-  configTime(60 * 60 * NTP_TIMEZONE, 0, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
-  if (!syncTime()) {
-    setTime(builtDateTime);
+void setupTime(time_t t) {
+  if (t) {
+    setTime(t);
     Sprinkler.attach();
-    timeLog.warn("Failed.");
-  }
-}
-
-void setupTime() {
-  builtDateTime = Sprinkler.builtDate();
-
-  if (Sprinkler.connectedWifi) {
-    setupNtp();
-  } else {
-    setTime(builtDateTime);
-    timeLog.println(Sprinkler.builtDateString());
-    Sprinkler.attach();
+    timeLog.println();
+    if (t == builtDateTime) {
+      timeLog.warn(ctime(&t));
+    } else {
+      timeLog.println(ctime(&t));
+    }
+  } else if (Sprinkler.connectedWifi) {
+    configTime(60 * 60 * NTP_TIMEZONE, 0, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
+    syncTime();
   }
 }
 
 void handleTicks() {
-  time_t t = now();
-  if (t < builtDateTime) {
-    if ((t - lastSyncTime) > 60000) {
-      if (!syncTime()) return;
-    }
+  time_t t = time(nullptr);
+  if (t > builtDateTime) {
+    Alarm.serviceAlarms();
+  } else if (lastSyncTime == t || (t - lastSyncTime) > 60000) {
+    syncTime();
   }
-
-  Alarm.serviceAlarms();
 }
