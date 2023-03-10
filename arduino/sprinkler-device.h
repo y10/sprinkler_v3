@@ -20,12 +20,16 @@ class SprinklerDevice {
   String disp_name;
   String full_name;
 
-  uint8_t pins[8];
+  // [0] engine
+  // [1] zone 1
+  // ...
+  // [6] zone 6
+  uint8_t pins[7]; 
 
   uint8_t version;
 
  public:
-  SprinklerDevice(uint8_t RL1, uint8_t RL2, uint8_t RL3, uint8_t RL4, uint8_t RL5, uint8_t RL6, uint8_t RL7, uint8_t RL8);
+  SprinklerDevice();
 
   const char *builtDateString() const { return __DATE__ " " __TIME__ " GMT"; }
 
@@ -54,6 +58,8 @@ class SprinklerDevice {
   const char *logLevel();
 
   SprinklerConfig load();
+
+  void init();
 
   void save(SprinklerConfig cfg);
 

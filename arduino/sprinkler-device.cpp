@@ -13,8 +13,8 @@
 WsConsole unitLog("unit");
 Ticker Timer;
 
-SprinklerDevice::SprinklerDevice(uint8_t RL1, uint8_t RL2, uint8_t RL3, uint8_t RL4, uint8_t RL5, uint8_t RL6, uint8_t RL7, uint8_t RL8)
-    : pins({RL1, RL2, RL3, RL4, RL5, RL6, RL7, RL8}) {
+SprinklerDevice::SprinklerDevice()
+ : pins({RL0_PIN, RL1_PIN, RL2_PIN, RL3_PIN, RL4_PIN, RL5_PIN, RL6_PIN}) {
   disp_name = "Sprinkler";
   host_name = "sprinkler-" + String(getChipId(), HEX);
   full_name = "sprinkler-v" + (String)SKETCH_VERSION_MAJOR + "." + (String)SKETCH_VERSION_MINOR + "." + (String)SKETCH_VERSION_RELEASE + "_" + String(getChipId(), HEX);
@@ -65,6 +65,17 @@ const String SprinklerDevice::dispname(const char *name) {
   }
 
   return disp_name;
+}
+
+void SprinklerDevice::init()
+{
+   pinMode(LED_PIN, OUTPUT);
+
+   for(const uint8_t &pin : pins)
+   {
+      pinMode(pin, OUTPUT);
+      digitalWrite(pin, HIGH);
+   }
 }
 
 SprinklerConfig SprinklerDevice::load() {

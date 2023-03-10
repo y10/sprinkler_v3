@@ -24,8 +24,7 @@ class SprinklerControl {
   bool connectedWifi = false;
 
   SprinklerControl()
-      : Device(RL0_PIN, RL1_PIN, RL2_PIN, RL3_PIN, RL4_PIN, RL5_PIN, RL6_PIN, RL7_PIN),
-        Settings([&](SprinklerZone *zone, SprinklerTimer *timer) { start(zone->index(), timer->duration()); }) {
+   : Settings([&](SprinklerZone *zone, SprinklerTimer *timer) { start(zone->index(), timer->duration()); }) {
   }
 
   const char * builtDateString() const { return Device.builtDateString(); }

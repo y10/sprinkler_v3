@@ -12,6 +12,6 @@
 #define RL4_PIN 25
 #define RL5_PIN 33
 #define RL6_PIN 32
-#define RL7_PIN 35
+
 
 #endif

@@ -143,6 +143,7 @@ void SprinklerControl::load() {
   SprinklerConfig cfg = Device.load();
   Console.logLevel((logLevel_t)cfg.loglevel);
   Settings.fromConfig(cfg);
+  Device.init();
 }
 
 void SprinklerControl::save() {
