@@ -15,7 +15,7 @@ class SprinklerZoneTimer {
       : Zone(zone), Duration(duration), StartTime(millis()), PauseTime(0), OnStop(onStop) {
     unsigned long d = (duration ? duration : 5);
     unsigned long ms = d * 1000 * 60;
-    timer.once(ms, +[](SprinklerZoneTimer* x) { x->OnStop(); }, this);
+    timer.once_ms(ms, +[](SprinklerZoneTimer* x) { x->OnStop(); }, this);
   }
 
   unsigned int Zone;
@@ -39,7 +39,7 @@ class SprinklerZoneTimer {
     uint32_t d = (uint32_t)Duration * 60 * 1000;
     uint32_t p = PauseTime - StartTime;
     uint32_t ms = d - p;
-    timer.once(ms, +[](SprinklerZoneTimer* x) { x->OnStop(); }, this);
+    timer.once_ms(ms, +[](SprinklerZoneTimer* x) { x->OnStop(); }, this);
     StartTime = millis() - p;
     PauseTime = 0;
   }
@@ -50,10 +50,13 @@ class SprinklerZoneTimer {
   }
 
   const String toJSON() {
-    return "{ \"state\": \"" + (String)(PauseTime ? "paused" : "started") +
+    auto ms = PauseTime ? PauseTime - StartTime : millis() - StartTime;
+    auto state = PauseTime ? "paused" : "started";
+    return "{ \"state\": \"" + (String)state +
            "\", \"zone\":" + (String)Zone +
-           ", \"millis\":" + (String)(PauseTime ? PauseTime - StartTime : millis() - StartTime) +
-           ", \"duration\": " + (String)Duration + " }";
+           ", \"millis\":" + (String)(ms) +
+           ", \"duration\": " + (String)Duration + 
+           " }";
   }
 
  private:
