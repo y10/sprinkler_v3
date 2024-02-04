@@ -17,13 +17,14 @@ gulp.task('copy', function () {
         .pipe(gulp.dest('arduino/html'));
 });
 
-gulp.task('webpack', function () {
+gulp.task('esbuild', function () {
     return gulp
         .src('arduino/html/js/index.js', 'arduino/html/js/setup.js')
-        .pipe(ard.buildWebpack("development", path.resolve(__dirname, 'arduino/html')))
+        .pipe(ard.buildEs("development", path.resolve(__dirname, 'arduino/html')))
         .pipe(gulp.dest('arduino/html'))
 
 });
+
 
 gulp.task('inline', function () {
     return gulp.src('arduino/html/*.html')
@@ -72,7 +73,7 @@ gulp.task('default', gulp.series(
     'copy',
     'buildConfigJs',
     //'buildHttpJs',
-    'webpack',
+    'esbuild',
     'inline',
     'gzip',
     'buildHeaders',

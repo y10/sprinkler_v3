@@ -1,44 +1,19 @@
 const path = require('path');
 const through = require('through2');
-const webpack = require('webpack-stream');
+const esbuild = require('gulp-esbuild');
 
 module.exports =
 {
-    buildWebpack(mode, context) {
-        return webpack({
-            mode,
-            context,
-            entry: {
-                index: './js/index.js',
-                setup: './js/setup.js',
-            },
-            output: {
-                library: 'sprinkler',
-                libraryTarget: 'umd',
-                filename: './js/[name].js',
-            },
-            module: {
-                rules: [
-                    {
-                        test: /\.js$/,
-                        loader: 'babel-loader',
-                        exclude: /node_modules/,
-                        query: {
-                            plugins: [
-                                ["@babel/plugin-proposal-class-properties", { "loose": true }],
-                                ["@babel/plugin-transform-runtime",
-                                    {
-                                        "corejs": false,
-                                        "helpers": false,
-                                        "regenerator": true,
-                                        "useESModules": true
-                                    }
-                                ]
-                            ],
-                        },
-                    }
-                ]
-            }
+    buildEs(mode, context) {
+        return esbuild({
+            entryPoints: ['./js/index.js', './js/setup.js'],
+            bundle: true,
+            minify: true,
+            format: 'iife',
+            platform: 'browser',
+            globalName: 'sprinkler',
+            sourcemap: 'both',
+            outdir: './js/',
         })
     },
 
