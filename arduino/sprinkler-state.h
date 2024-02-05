@@ -68,6 +68,10 @@ class SprinklerState {
  public:
   std::map<unsigned int, SprinklerZoneTimer*> Timers;
 
+  bool isEnabled();
+  void enable();
+  void disable();
+
   bool isPaused(unsigned int zone);
   bool isWatering(unsigned int zone);
   bool isWatering();
@@ -81,6 +85,9 @@ class SprinklerState {
 
   const String toJSON(unsigned int zone);
   const String toJSON();
+
+ private:
+  bool enabled = true;
 };
 
 #endif

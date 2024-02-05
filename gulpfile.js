@@ -1,5 +1,4 @@
 const del = require('del');
-const path = require('path');
 const gulp = require('gulp');
 const htmlmin = require('gulp-htmlmin');
 const gzip = require('gulp-gzip');
@@ -17,14 +16,19 @@ gulp.task('copy', function () {
         .pipe(gulp.dest('arduino/html'));
 });
 
-gulp.task('esbuild', function () {
+gulp.task('buildIndexJs', function () {
     return gulp
-        .src('arduino/html/js/index.js', 'arduino/html/js/setup.js')
-        .pipe(ard.buildEs("development", path.resolve(__dirname, 'arduino/html')))
+        .src('arduino/html/js/index.js')
+        .pipe(ard.buildJs())
         .pipe(gulp.dest('arduino/html'))
-
 });
 
+gulp.task('buildSetupJs', function () {
+    return gulp
+        .src('arduino/html/js/setup.js')
+        .pipe(ard.buildJs())
+        .pipe(gulp.dest('arduino/html'))
+});
 
 gulp.task('inline', function () {
     return gulp.src('arduino/html/*.html')
@@ -73,7 +77,8 @@ gulp.task('default', gulp.series(
     'copy',
     'buildConfigJs',
     //'buildHttpJs',
-    'esbuild',
+    'buildIndexJs',
+    'buildSetupJs',
     'inline',
     'gzip',
     'buildHeaders',

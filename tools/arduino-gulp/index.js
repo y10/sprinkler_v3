@@ -4,9 +4,8 @@ const esbuild = require('gulp-esbuild');
 
 module.exports =
 {
-    buildEs(mode, context) {
+    buildJs() {
         return esbuild({
-            entryPoints: ['./js/index.js', './js/setup.js'],
             bundle: true,
             minify: true,
             format: 'iife',

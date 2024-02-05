@@ -130,19 +130,19 @@ void setupHttp() {
   });
 
   http.on("/api/schedule", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
-    json(request, (String) "{ \"state\": \"" + String(Sprinkler.isAttached() ? "enabled" : "disabled") + "\" }");
+    json(request, (String) "{ \"state\": \"" + String(Sprinkler.isEnabled() ? "enabled" : "disabled") + "\" }");
   });
 
   http.on("/api/schedule/{}", ASYNC_HTTP_POST, [&](AsyncWebServerRequest *request) {
     String command = request->pathArg(0);
     console.println("POST: /api/schedule/" + command);
     if (command == "enable") {
-      Sprinkler.attach();
+      Sprinkler.enable();
     }
     else {
-      Sprinkler.detach();
+      Sprinkler.disable();
     }
-    json(request, (String) "{ \"state\": \"" + String(Sprinkler.isAttached() ? "enabled" : "disabled") + "\" }");
+    json(request, (String) "{ \"state\": \"" + String(Sprinkler.isEnabled() ? "enabled" : "disabled") + "\" }");
   });
 
   http.on("/api/settings/general", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {

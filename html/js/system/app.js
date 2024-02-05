@@ -10,7 +10,15 @@ import { ZoneSet } from "../models/zoneSet";
 class AppModel {
   $settings = {};
 
-  $zones = new ZoneSet();
+  $zones = new ZoneSet({
+    // Uncoment for test
+    // 1: {
+    //   name: "Zone 1",
+    //   days: {
+    //     all: [{ h: Time.toUtcHour(0) }],
+    //   },
+    // },
+  });
 
   /**
    * @arg value {{ name?:string, host?:string, ssid?:string }?}

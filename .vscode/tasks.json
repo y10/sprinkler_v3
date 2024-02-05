@@ -3,7 +3,7 @@
 	"tasks": [
 		{
 			"type": "shell",
-			"label": "Webpack",
+			"label": "ESBuild",
 			"command": "gulp",
 			"args": ["default"],
 			"group": {

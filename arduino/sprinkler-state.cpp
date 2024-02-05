@@ -15,6 +15,18 @@ size_t SprinklerState::count() {
   return count;
 }
 
+bool SprinklerState::isEnabled() {
+  return enabled;
+}
+
+void SprinklerState::enable() {
+  enabled = true;
+}
+
+void SprinklerState::disable() {
+  enabled = false;
+}
+
 bool SprinklerState::isWatering() {
   for (const auto &kv : Timers) {
     SprinklerZoneTimer *timer = kv.second;

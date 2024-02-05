@@ -39,6 +39,18 @@ void SprinklerControl::on(const char *eventType, OnEvent event) {
   onEventHandlers[eventType].push_back(event);
 }
 
+void SprinklerControl::scheduled(unsigned int zone, unsigned int duration = 0) {
+  if (Timers.isEnabled())
+  {
+    console.println("Scheduled timer " + (String)zone);
+    start(zone, duration);
+  }
+  else
+  {
+    console.println("Scheduled timer " + (String)zone + " canceled");
+  }
+}
+
 void SprinklerControl::start(unsigned int zone, unsigned int duration = 0) {
   console.println("Starting timer " + (String)zone);
 
@@ -125,6 +137,18 @@ bool SprinklerControl::fromJSON(JsonObject json) {
   }
 
   return true;
+}
+
+bool SprinklerControl::isEnabled() {
+  return Settings.isAttached() && Timers.isEnabled();
+}
+
+void SprinklerControl::enable() {
+  Timers.enable();
+}
+
+void SprinklerControl::disable() {
+  Timers.disable();
 }
 
 bool SprinklerControl::isAttached() {

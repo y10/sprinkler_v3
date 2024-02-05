@@ -24,7 +24,7 @@ class SprinklerControl {
   bool connectedWifi = false;
 
   SprinklerControl()
-   : Settings([&](SprinklerZone *zone, SprinklerTimer *timer) { start(zone->index(), timer->duration()); }) {
+   : Settings([&](SprinklerZone *zone, SprinklerTimer *timer) { scheduled(zone->index(), timer->duration()); }) {
   }
 
   const char * builtDateString() const { return Device.builtDateString(); }
@@ -59,6 +59,9 @@ class SprinklerControl {
   void pause(unsigned int zone);
   void resume(unsigned int zone);
 
+  bool isEnabled();
+  void enable();
+  void disable();
   bool isAttached();
   void attach();
   void detach();
@@ -74,6 +77,8 @@ class SprinklerControl {
   void fireEvent(const char *eventType) { fireEvent(eventType, ""); }
   void fireEvent(const char *eventType, const String evenDescription) { fireEvent(eventType, evenDescription.c_str()); }
   void fireEvent(const char *eventType, const char *evenDescription);
+
+  void scheduled(unsigned int zone, unsigned int duration);
 
  private:
   std::map<const char *, std::vector<OnEvent>> onEventHandlers;
