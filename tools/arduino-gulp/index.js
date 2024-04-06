@@ -12,6 +12,7 @@ module.exports =
             platform: 'browser',
             globalName: 'sprinkler',
             sourcemap: 'both',
+            sourceRoot: 'https://ota.voights.net@sprinkler_v3',
             outdir: './js/',
         })
     },
