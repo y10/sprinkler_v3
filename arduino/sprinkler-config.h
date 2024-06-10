@@ -28,8 +28,9 @@ struct SprinklerConfig
   char full_name[50];
   char host_name[50];
   char disp_name[50];
+  char source; 
   SprinklerZoneConfig zones[SKETCH_MAX_ZONES];
-  SprinklerConfig(): version(0), full_name({0}), host_name({0}), disp_name({0}) {}
+  SprinklerConfig(): version(0), full_name({0}), host_name({0}), disp_name({0}),  source('P') {}
 };
 
 #endif

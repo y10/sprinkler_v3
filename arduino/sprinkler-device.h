@@ -20,7 +20,7 @@ class SprinklerDevice {
   String disp_name;
   String full_name;
 
-  // [0] engine
+  // [0] water source
   // [1] zone 1
   // ...
   // [6] zone 6
@@ -52,6 +52,12 @@ class SprinklerDevice {
   const String hostname(const char *name);
 
   const String fullname() const { return full_name; }
+
+  const String source();
+
+  const String source(const char *name);
+
+  const bool source(const uint8_t pin);
 
   logLevel_t logLevel(const char *level);
 

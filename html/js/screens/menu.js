@@ -24,6 +24,16 @@ button {
   margin: 8px 0;
 }
 
+#pipe {
+  background-color: var(--blue-background-color);
+  color: var(--blue-text-color);
+}
+
+#pump {
+  background-color: var(--info-background-color);
+  color: var(--info-text-color);
+}
+
 #update{
   background-color: var(--warn-background-color);
   color: var(--warn-text-color);
@@ -38,6 +48,8 @@ button {
 <div class="container">
   <button id="zones">zones</button>
   <button id="setup">general</button>
+  <button id="pipe" style="display: none">city water</button>
+  <button id="pump">well water</button>
   <button id="schedule">schedule</button>
   <button id="status">enabled</button>
   <button id="update">firmware update</button>
@@ -55,12 +67,14 @@ export class Menu extends HTMLElement {
       $('#zones').on('click', this.gotoZones.bind(this));
       $('#schedule').on('click', this.gotoSchedule.bind(this));
       $('#setup').on('click', this.gotoSetup.bind(this));
+      this.$btnPipe = $('#pipe').on('click', this.usePump.bind(this));
+      this.$btnPump = $('#pump').on('click', this.usePipe.bind(this));
+      this.$btnState = $('#status').on('click', this.gotoStatus.bind(this));
       $('#update').on('click', this.gotoUpdate.bind(this));
-      this.$btnStatus = $('#status').on('click', this.gotoStatus.bind(this));
       $('#info').on('click', this.gotoInfo.bind(this));
 
       if ($(this).inViewport()) {
-        this.update().catch();
+        this.refresh().catch();
       }
     });
   }
@@ -85,13 +99,35 @@ export class Menu extends HTMLElement {
     Router.navigate('update');
   }
 
+  async usePipe() {
+    await this.use('utility')
+  }
+
+  async usePump() {
+    await this.use('punmp')
+  }
+  
+  async use(source) {
+    const spinner = Status.wait(5000);
+    try {
+      await Http.json('POST', `api/use/${source}/water`);
+    } catch (error) {
+      if (error.name != 'timeout') {
+          Status.error(error);
+          spinner.close();
+      }
+    } 
+    await spinner;
+    App.reload();
+  }
+
   async gotoStatus(e) {
     const spinner = Status.wait(5000);
     const element = e.srcElement;
     const command = element.innerText == "enabled" ? "disable" : "enable";
     try {
-      const state = await Http.json('POST', `api/schedule/${command}`);
-      this.update(state);
+      await Http.json('POST', `api/schedule/${command}`);
+      this.refresh();
       spinner.close();
     } catch (error) {
       Status.error(error);
@@ -119,22 +155,17 @@ export class Menu extends HTMLElement {
     }
   }
 
-  async update(options) {
-    if (!options) {
-      options = {...await this.state()};
-      console.log(options);
-    }
-
-    const {state} = options;
-    this.$btnStatus.text(state == "enabled" ? "enabled" : "disabled");
-  }
-
-  async state() {
+  async refresh() {
+    let state = { schedule: "disabled", source: "pump" };
     try {
-      return await Http.json('GET', 'api/schedule');
+      const s = await Http.json('GET', 'api/settings');
+      state = {...state, ...s}
     } catch (error) {
       console.error(error);
-      return { state: "disabled" };
     }
+
+    this.$btnState.text(state.schedule == "enabled" ? "enabled" : "disabled");
+    this.$btnPump.css('display', state.source == "pump" ? '' : 'none');
+    this.$btnPipe.css('display', state.source != "pump" ? '' : 'none');
   }
 }

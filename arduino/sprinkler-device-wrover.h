@@ -3,8 +3,9 @@
 
 #define LED_PIN 2
 
-#define RL0_PIN 13                 
-//              12 energized on boot
+#define ENG_PIN 13                 
+#define UTL_PIN 4 // 12 energized on boot
+
 #define RL6_PIN 14
 #define RL5_PIN 27
 #define RL4_PIN 26

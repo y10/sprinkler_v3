@@ -14,7 +14,7 @@ WsConsole unitLog("unit");
 Ticker Timer;
 
 SprinklerDevice::SprinklerDevice()
- : pins({RL0_PIN, RL1_PIN, RL2_PIN, RL3_PIN, RL4_PIN, RL5_PIN, RL6_PIN}) {
+ : pins({ENG_PIN, RL1_PIN, RL2_PIN, RL3_PIN, RL4_PIN, RL5_PIN, RL6_PIN}) {
   disp_name = "Sprinkler";
   host_name = "sprinkler-" + String(getChipId(), HEX);
   full_name = "sprinkler-v" + (String)SKETCH_VERSION_MAJOR + "." + (String)SKETCH_VERSION_MINOR + "." + (String)SKETCH_VERSION_RELEASE + "_" + String(getChipId(), HEX);
@@ -67,6 +67,35 @@ const String SprinklerDevice::dispname(const char *name) {
   return disp_name;
 }
 
+const String SprinklerDevice::source() {
+   return pins[0] == ENG_PIN ? "pump" : "utility";
+}
+
+const String SprinklerDevice::source(const char *name) {
+  if (strlen(name) > 0) {
+    if (tolower((unsigned char)name[0]) == 'p') {
+      source(ENG_PIN);
+    } else if (tolower((unsigned char)name[0]) == 'u') {
+      source(UTL_PIN);
+    }
+  }
+
+  return source();
+}
+
+const bool SprinklerDevice::source(const uint8_t pin) {
+  if (pins[0] != pin)
+  {
+    turnOff();
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, HIGH);
+    pins[0] = pin;
+    return true;
+  }
+
+  return false;
+}
+
 void SprinklerDevice::init()
 {
    pinMode(LED_PIN, OUTPUT);
@@ -94,6 +123,9 @@ SprinklerConfig SprinklerDevice::load() {
     unitLog.print("host. name: ");
     unitLog.println(cfg.host_name);
     host_name = cfg.host_name;
+    unitLog.print("water source: ");
+    unitLog.println(cfg.source);
+    pins[0] = cfg.source == 'U' ? UTL_PIN : ENG_PIN;
     unitLog.print("rev: ");
     unitLog.println(cfg.version);
     version = cfg.version;
@@ -116,6 +148,7 @@ void SprinklerDevice::save(SprinklerConfig cfg) {
   strcpy(cfg.disp_name, disp_name.c_str());
   strcpy(cfg.host_name, host_name.c_str());
   strcpy(cfg.full_name, full_name.c_str());
+  cfg.source = pins[0] == ENG_PIN ? 'P' : 'U';
   cfg.loglevel = loglevel;
   cfg.version = version + 1;
   EEPROM.begin(EEPROM_SIZE);

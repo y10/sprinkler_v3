@@ -144,6 +144,17 @@ void setupHttp() {
     }
     json(request, (String) "{ \"state\": \"" + String(Sprinkler.isEnabled() ? "enabled" : "disabled") + "\" }");
   });
+  
+  http.on("/api/use/{}/water", ASYNC_HTTP_POST, [&](AsyncWebServerRequest *request) {
+    String source = request->pathArg(0);
+    console.println("POST: /api/use/" + source + "/water");
+    console.println();
+    if (Sprinkler.water(source))
+    {
+      Sprinkler.save();
+      Sprinkler.restart();
+    }
+  });
 
   http.on("/api/settings/general", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
     json(request, (String) "{ \"name\": \"" + Sprinkler.dispname() + "\", \"host\": \"" + Sprinkler.hostname() + "\" }");

@@ -43,11 +43,14 @@ class SprinklerControl {
 
   void logLevel(const char *level) {
     Device.logLevel(level);
-    Device.restart();
+  }
+
+  bool water(String source) {
+    return Device.source() != Device.source(source.c_str());
   }
 
   String toJSON() {
-    return (String) "{ \"logLevel\": \"" + (String)Device.logLevel() + "\", \"name\": \"" + Device.dispname() + "\", \"ssid\": \"" + wifissid() + "\", \"host\": \"" + Device.hostname() + "\",  \"zones\": " + Settings.toJSON() + " }";
+    return (String) "{ \"logLevel\": \"" + (String)Device.logLevel() + "\", \"name\": \"" + Device.dispname() + "\", \"ssid\": \"" + wifissid() + "\", \"host\": \"" + Device.hostname() + "\",  \"zones\": " + Settings.toJSON() + ",  \"source\": \"" + Device.source() + "\",  \"enabled\": " + isEnabled() + " }";
   }
 
   bool fromJSON(JsonObject json);

@@ -9,7 +9,10 @@ async function fetchUrl(url, options) {
     } catch (error) {
         clearTimeout(timerid);
         if (controller.signal.aborted)
-            throw new Error("Request exceeded " + timeout/1000 + "s timeout.");        
+            throw {
+                name: "timeout",
+                message: "Request exceeded " + timeout/1000 + "s timeout."
+            };        
         throw error;
     }
     if (!response.ok)
