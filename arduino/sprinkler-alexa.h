@@ -25,8 +25,7 @@ void setupAlexa() {
 
     fauxmo->onSet([&](unsigned char device_id, const char *device_name, bool state, unsigned char value) {
       alexa_console.printf("Set Device #%d (%s) state: %s\n", device_id, device_name, state ? "ON" : "OFF");
-      // TODO: pass zone
-      // state ? Sprinkler.start() : Sprinkler.stop();
+      state ? Sprinkler.enable() : Sprinkler.disable();
     });
 
     fauxmo->onGet([&](unsigned char device_id, const char *device_name, bool &state, unsigned char &value) {

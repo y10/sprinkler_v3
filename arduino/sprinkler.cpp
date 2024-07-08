@@ -75,6 +75,15 @@ void SprinklerControl::stop(unsigned int zone) {
   }
 }
 
+void SprinklerControl::stop() {
+  console.println("Stopping all");
+  Device.turnOff(); 
+  Device.blink(0);
+  for (size_t zone = 1; zone <= 6; zone++) {
+    Device.turnOff(zone); 
+  }
+}
+
 void SprinklerControl::pause(unsigned int zone) {
   console.println("Pausing timer " + (String)zone);
   if (Timers.isWatering(zone)) {
@@ -148,6 +157,7 @@ void SprinklerControl::enable() {
 }
 
 void SprinklerControl::disable() {
+  stop();
   Timers.disable();
 }
 

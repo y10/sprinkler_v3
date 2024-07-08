@@ -59,6 +59,7 @@ class SprinklerControl {
 
   void start(unsigned int zone, unsigned int duration);
   void stop(unsigned int zone);
+  void stop();
   void pause(unsigned int zone);
   void resume(unsigned int zone);
 
