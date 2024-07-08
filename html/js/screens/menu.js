@@ -156,7 +156,7 @@ export class Menu extends HTMLElement {
   }
 
   async refresh() {
-    let state = { schedule: "disabled", source: "pump" };
+    let state = { enabled: 0, source: "pump" };
     try {
       const s = await Http.json('GET', 'api/settings');
       state = {...state, ...s}
@@ -164,7 +164,7 @@ export class Menu extends HTMLElement {
       console.error(error);
     }
 
-    this.$btnState.text(state.schedule == "enabled" ? "enabled" : "disabled");
+    this.$btnState.text(state.enabled ? "enabled" : "disabled");
     this.$btnPump.css('display', state.source == "pump" ? '' : 'none');
     this.$btnPipe.css('display', state.source != "pump" ? '' : 'none');
   }
