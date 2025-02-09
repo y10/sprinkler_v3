@@ -1,15 +1,26 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"type": "shell",
-			"label": "ESBuild",
-			"command": "gulp",
-			"args": ["default"],
-			"group": {
-				"kind": "build",
-				"isDefault": true
-		    }
-		}
-	]
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Prebuild HTML",
+            "type": "shell",
+            "command": "gulp"
+        },
+        {
+            "label": "Compile ESP32",
+            "type": "shell",
+            "command": "tools/arduino-cli compile --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino",
+            "dependsOn": ["Prebuild HTML"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Postbuild",
+            "type": "shell",
+            "command": "publish",
+            "dependsOn": ["Compile ESP32"]
+        }
+    ]
 }
