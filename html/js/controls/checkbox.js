@@ -48,7 +48,8 @@ const template = (self) => `
   }
 
   .checkbox-text {
-    color: currentColor;
+    font-size: 1.5rem;
+    color:#ffffffcc;
     transition: 0.375s ease;
     text-align: center;
     background: transparent;
