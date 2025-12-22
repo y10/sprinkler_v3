@@ -196,8 +196,8 @@ Get user confirmation before proceeding.
 When updating success criteria, always maintain the two-category structure:
 
 1. **Automated Verification** (can be run by execution agents):
-   - Web UI build: `npx gulp`
-   - Firmware compile: `arduino-cli compile --fqbn esp32:esp32:esp32wrover arduino --output-dir .bin`
+   - Web UI build: `deno task build`
+   - Firmware compile: `tools/arduino-cli compile --config-file arduino/arduino-cli.yaml --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino`
    - Generated files exist in `arduino/html/`
    - No compiler warnings
 

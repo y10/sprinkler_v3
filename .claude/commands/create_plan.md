@@ -342,8 +342,8 @@ After structure approval:
 **Always separate success criteria into two categories:**
 
 1. **Automated Verification** (can be run by execution agents):
-   - Web UI build: `npx gulp`
-   - Firmware compile: `arduino-cli compile --fqbn esp32:esp32:esp32wrover arduino --output-dir .bin`
+   - Web UI build: `deno task build`
+   - Firmware compile: `tools/arduino-cli compile --config-file arduino/arduino-cli.yaml --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino`
    - Generated headers exist in `arduino/html/`
    - No compilation warnings/errors
 
@@ -358,8 +358,8 @@ After structure approval:
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Web assets build: `npx gulp`
-- [ ] Firmware compiles: `arduino-cli compile --fqbn esp32:esp32:esp32wrover arduino --output-dir .bin`
+- [ ] Web assets build: `deno task build`
+- [ ] Firmware compiles: `tools/arduino-cli compile --config-file arduino/arduino-cli.yaml --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino`
 - [ ] Generated headers updated in `arduino/html/`
 - [ ] No compiler warnings
 
@@ -376,13 +376,13 @@ After structure approval:
 - Start with header file changes in `arduino/sprinkler-*.h`
 - Update the main controller in `sprinkler.h` if adding new public API
 - Add HTTP endpoints in `sprinkler-http.h`
-- Update web UI in `html/` (source), then run `npx gulp`
-- Test with `arduino-cli compile` before uploading to hardware
+- Update web UI in `html/` (source), then run `deno task build`
+- Test with `tools/arduino-cli compile --config-file arduino/arduino-cli.yaml --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino`
 - Verify EEPROM compatibility if changing config structures
 
 ### For Web UI Changes:
 - Edit source files in `html/js/` and `html/css/`
-- Run `npx gulp` to generate gzipped C headers
+- Run `deno task build` to generate gzipped C headers
 - Test locally with mock data in `html/js/system/http.mock.js`
 - Upload firmware to test WebSocket integration
 

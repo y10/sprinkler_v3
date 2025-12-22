@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:docs.espressif.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:components.espressif.com)",
+      "WebFetch(domain:deno.com)",
+      "WebFetch(domain:docs.platformio.org)"
+    ]
+  }
+}

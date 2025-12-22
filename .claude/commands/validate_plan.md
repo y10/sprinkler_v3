@@ -24,8 +24,8 @@ When invoked:
    git diff HEAD~N..HEAD  # Where N covers implementation commits
 
    # Run comprehensive checks for sprinkler project
-   npx gulp                # Build web UI
-   arduino-cli compile --fqbn esp32:esp32:esp32wrover arduino --output-dir .bin
+   deno task build                # Build web UI
+   tools/arduino-cli compile --config-file arduino/arduino-cli.yaml --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino
    ```
 
 ## Validation Process
@@ -93,8 +93,8 @@ Create comprehensive validation summary:
 ⚠️ Phase 3: [Name] - Partially implemented (see issues)
 
 ### Automated Verification Results
-✓ Web UI builds: `npx gulp`
-✓ Firmware compiles: `arduino-cli compile --fqbn esp32:esp32:esp32wrover arduino`
+✓ Web UI builds: `deno task build`
+✓ Firmware compiles: `tools/arduino-cli compile --config-file arduino/arduino-cli.yaml --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino`
 ✗ Compiler warnings: (3 warnings in sprinkler-http.h)
 
 ### Code Review Findings

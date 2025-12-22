@@ -4,12 +4,12 @@
         {
             "label": "Prebuild HTML",
             "type": "shell",
-            "command": "gulp"
+            "command": "deno task build"
         },
         {
             "label": "Compile ESP32",
             "type": "shell",
-            "command": "tools/arduino-cli compile --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino",
+            "command": "tools/arduino-cli compile --config-file arduino/arduino-cli.yaml --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino",
             "dependsOn": ["Prebuild HTML"],
             "group": {
                 "kind": "build",

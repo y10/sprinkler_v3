@@ -14,7 +14,7 @@ WsConsole unitLog("unit");
 Ticker Timer;
 
 SprinklerDevice::SprinklerDevice()
- : pins({ENG_PIN, RL1_PIN, RL2_PIN, RL3_PIN, RL4_PIN, RL5_PIN, RL6_PIN}) {
+ : pins{ENG_PIN, RL1_PIN, RL2_PIN, RL3_PIN, RL4_PIN, RL5_PIN, RL6_PIN} {
   disp_name = "Sprinkler";
   host_name = "sprinkler-" + String(getChipId(), HEX);
   full_name = "sprinkler-v" + (String)SKETCH_VERSION_MAJOR + "." + (String)SKETCH_VERSION_MINOR + "." + (String)SKETCH_VERSION_RELEASE + "_" + String(getChipId(), HEX);

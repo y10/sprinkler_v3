@@ -1,0 +1,10 @@
+{
+  "tasks": {
+    "build": "deno run --allow-read --allow-write --allow-env --allow-run build.ts",
+    "build:watch": "deno run --allow-read --allow-write --allow-env --allow-run --watch build.ts"
+  },
+  "imports": {
+    "@std/path": "jsr:@std/path@^1",
+    "@std/fs": "jsr:@std/fs@^1"
+  }
+}

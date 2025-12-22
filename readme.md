@@ -12,11 +12,31 @@ If you like my **Sprinkler Controller**, give it a star, or fork it and contribu
 
 ## Development
 
-1. Download the project from the github [**repository**](https://github.com/y10/sprinkler_v3).
-2. Open **Arduino IDE**, and in the preferences window set the sketch location to arduino folder located inside the project, see example:
- C:\Users\\%username%\Documents\Arduino\\_sprinkler_v3_\\**arduino**
-3. Open **Visual Studio Code** and select the project root folder, as following:
- C:\Users\\%username%\Documents\Arduino\\**_sprinkler_v3**
+### Prerequisites
+- [Deno](https://deno.land/) (v2.0+) - for building web assets
+- [arduino-cli](https://arduino.github.io/arduino-cli/) - for compiling firmware (included in `tools/`)
+- ESP32 Arduino core 2.0.x (install via `tools/arduino-cli core install esp32:esp32@2.0.17`)
+
+### Setup
+1. Clone the project from [GitHub](https://github.com/y10/sprinkler_v3)
+2. Open **Visual Studio Code** and select the project root folder
+
+### Build Commands
+```bash
+# Build web assets (generates C headers from HTML/JS)
+deno task build
+
+# Compile firmware
+tools/arduino-cli compile --config-file arduino/arduino-cli.yaml --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino
+
+# Or use VS Code build task (Ctrl+Shift+B)
+```
+
+### Project Structure
+- `html/` - Web UI source files (edit these)
+- `arduino/` - Firmware source and libraries
+- `arduino/html/` - Generated files (don't edit directly)
+- `.sprinkler/settings.json` - Build configuration
 
 Happy coding.
 
