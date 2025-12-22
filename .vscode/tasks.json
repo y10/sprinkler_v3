@@ -1,5 +1,13 @@
 {
     "version": "2.0.0",
+    "inputs": [
+        {
+            "id": "deviceIP",
+            "type": "promptString",
+            "description": "Enter device IP address",
+            "default": "192.168.1.248"
+        }
+    ],
     "tasks": [
         {
             "label": "Prebuild HTML",
@@ -7,14 +15,25 @@
             "command": "deno task build"
         },
         {
+            "label": "Prebuild HTML (Dev)",
+            "type": "shell",
+            "command": "deno task build:dev"
+        },
+        {
             "label": "Compile ESP32",
             "type": "shell",
-            "command": "tools/arduino-cli compile --config-file arduino/arduino-cli.yaml --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino",
+            "command": "deno task compile",
             "dependsOn": ["Prebuild HTML"],
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Upload OTA",
+            "type": "shell",
+            "command": "deno run --allow-read --allow-run upload.ts ${input:deviceIP}",
+            "dependsOn": ["Compile ESP32"]
         },
         {
             "label": "Postbuild",

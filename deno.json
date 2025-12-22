@@ -1,7 +1,12 @@
 {
   "tasks": {
     "build": "deno run --allow-read --allow-write --allow-env --allow-run build.ts",
-    "build:watch": "deno run --allow-read --allow-write --allow-env --allow-run --watch build.ts"
+    "build:dev": "deno run --allow-read --allow-write --allow-env --allow-run build.ts --mock",
+    "build:watch": "deno run --allow-read --allow-write --allow-env --allow-run --watch build.ts",
+    "compile": "tools/arduino-cli compile --config-file arduino/arduino-cli.yaml --fqbn esp32:esp32:esp32wrover --output-dir .bin arduino/arduino.ino",
+    "upload": "deno run --allow-read --allow-run upload.ts",
+    "upload:248": "deno run --allow-read --allow-run upload.ts 192.168.1.248",
+    "upload:100": "deno run --allow-read --allow-run upload.ts 192.168.1.100"
   },
   "imports": {
     "@std/path": "jsr:@std/path@^1",

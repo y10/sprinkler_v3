@@ -7,6 +7,9 @@ const HTML_SRC = "./html";
 const HTML_DEST = "./arduino/html";
 const SETTINGS_PATH = "./.sprinkler/settings.json";
 
+// Check for --mock flag
+const USE_MOCK_HTTP = Deno.args.includes("--mock");
+
 interface Settings {
   version: string;
   maxZones: number;
@@ -82,6 +85,16 @@ export const Version = {
 
   await ensureDir(join(HTML_DEST, "js"));
   await Deno.writeTextFile(join(HTML_DEST, "js", "config.js"), content);
+}
+
+async function generateHttpModule(): Promise<void> {
+  const httpModule = USE_MOCK_HTTP ? "http.mock" : "http.prod";
+  console.log(`Generating http.js (using ${httpModule})...`);
+
+  const content = `export * from "./${httpModule}";\n`;
+
+  await ensureDir(join(HTML_DEST, "js", "system"));
+  await Deno.writeTextFile(join(HTML_DEST, "js", "system", "http.js"), content);
 }
 
 async function bundleJs(): Promise<void> {
@@ -325,6 +338,7 @@ async function build(): Promise<void> {
   await clean();
   await copyFiles();
   await generateConfigJs(settings);
+  await generateHttpModule();
   await bundleJs();
   await processHtml();
   await gzipFiles();
