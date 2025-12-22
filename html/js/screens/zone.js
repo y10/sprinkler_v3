@@ -219,6 +219,7 @@ export class Zone extends HTMLElement {
   timeLimit = TIME_LIMIT_DEFAULT;
   timePassed = 0;
   timerInterval = null;
+  updatingDropdown = false;  // Prevent change event loop
 
   connectedCallback() {
     this.zone = App.zones(this.getAttribute("zone-id"));
@@ -231,7 +232,27 @@ export class Zone extends HTMLElement {
       this.BtnStop = $('#timer-stop');
       this.SvgRemainingPath = $("#timer-path-remaining");
 
-      this.DdlMinutes.on('change', this.onMinutesChange.bind(this))
+      // Prevent dropdown/button events from bubbling to PnlTimer's onClick handler
+      const stopBubble = (e) => e.stopPropagation();
+
+      this.DdlMinutes
+        .on('change', this.onMinutesChange.bind(this))
+        .on('mousedown', stopBubble)
+        .on('mouseup', stopBubble)
+        .on('touchstart', stopBubble)
+        .on('touchend', stopBubble);
+
+      this.DdlSeconds
+        .on('mousedown', stopBubble)
+        .on('mouseup', stopBubble)
+        .on('touchstart', stopBubble)
+        .on('touchend', stopBubble);
+
+      this.BtnStop
+        .on('mousedown', stopBubble)
+        .on('mouseup', stopBubble)
+        .on('touchstart', stopBubble)
+        .on('touchend', stopBubble);
 
       this.PnlTimer.on('touchstart', () => {
         this.PnlTimer.addClass("touch")
@@ -296,13 +317,19 @@ export class Zone extends HTMLElement {
   }
 
   async onMinutesChange(e) {
+    // Ignore programmatic changes to prevent event loop
+    if (this.updatingDropdown) return;
+
     const minutes = parseInt(e.srcElement.value);
 
-    if (this.timerInterval)
-      await this.clearTimer();
-
-    if (minutes)
+    if (minutes) {
+      // Don't send stop then start - just start directly (firmware handles replacement)
+      this.clearTimerInterval();
       this.startTimer(minutes * 60);
+    } else if (this.timerInterval || this.timePassed) {
+      // Only stop if selecting 0 minutes
+      await this.clearTimer();
+    }
   }
 
   clearTimerInterval() {
@@ -380,14 +407,15 @@ export class Zone extends HTMLElement {
   }
 
   clockTimer(totalSeconds) {
-
+    // Use the passed totalSeconds as the actual time remaining
     this.timeLeft = totalSeconds;
-    this.timePassed = this.timePassed += 1;
-    this.timeLeft = this.timeLimit - this.timePassed;
 
+    // Display current time immediately
     this.formatTime(this.timeLeft);
+    this.setCircleDasharray();
     this.setRemainingPathColor(COLOR_CODES.info.color);
 
+    // Start interval if not already running
     if (!this.timerInterval) {
       this.timerInterval = setInterval(() => {
         this.timePassed += 1;
@@ -406,30 +434,45 @@ export class Zone extends HTMLElement {
   }
 
   formatTime(totalSeconds) {
-    let minutes = Math.floor(totalSeconds / 60);
-    let seconds = totalSeconds % 60;
-    let options = [0, 5, 15, 20, 30];
-    let index = 0;
-    for (index = options.length - 1; index >= 0; index--) {
-      const option = options[index];
-      if (minutes == option)
-        break;
-      if (minutes > option) {
-        index += 1
-        break;
+    this.updatingDropdown = true;  // Prevent change event loop
+
+    try {
+      let minutes = Math.floor(totalSeconds / 60);
+      let seconds = totalSeconds % 60;
+      const standardOptions = [0, 5, 15, 20, 30];
+
+      // Find where this minute value fits
+      let index = standardOptions.findIndex(opt => opt >= minutes);
+      if (index === -1) index = standardOptions.length;
+
+      // Check if we need custom options (minute not in standard list)
+      const needsCustom = !standardOptions.includes(minutes) && minutes > 0;
+
+      // Build options array
+      let options;
+      if (needsCustom) {
+        options = [...standardOptions.slice(0, index), minutes, ...standardOptions.slice(index)];
+      } else {
+        options = standardOptions;
+        index = standardOptions.indexOf(minutes);
+        if (index === -1) index = 0;
       }
-    }
 
-    if (index == options.length || options[index] != minutes) {
-      options = [...options.slice(0, index), minutes, ...options.slice(index)].map(x => String.format00(x))
-      this.DdlMinutes.html('');
-      options.forEach((o, i) => {
-        this.DdlMinutes.append(`<option>${o}</option>`)
+      // Always rebuild dropdown to ensure clean state
+      const select = this.DdlMinutes.item();
+      select.innerHTML = '';
+      options.forEach((o) => {
+        const opt = document.createElement('option');
+        opt.value = String.format00(o);
+        opt.textContent = String.format00(o);
+        select.appendChild(opt);
       });
-    }
 
-    this.DdlMinutes.item().selectedIndex = index;
-    this.DdlSeconds.item().value = String.format00(seconds);
+      select.selectedIndex = index;
+      this.DdlSeconds.item().value = String.format00(seconds);
+    } finally {
+      this.updatingDropdown = false;  // Re-enable change events
+    }
   }
 
   setRemainingPathColorFromThreshold() {
