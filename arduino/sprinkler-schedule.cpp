@@ -1,6 +1,8 @@
 #include <WsConsole.h>
 #include "sprinkler-schedule.h"
 
+volatile bool alarmServiceLocked = false;
+
 void SprinklerTimer::disable()
 {
   if (Alarm.isAllocated(AlarmID))
@@ -127,6 +129,8 @@ SprinklerTimerConfig ScheduleDay::toConfig()
 
 void ScheduleDay::fromConfig(SprinklerTimerConfig &config)
 {
+  alarmServiceLocked = true;  // Prevent alarm servicing during update
+
   for (auto &t : Timers)
   {
     t->disable();
@@ -135,16 +139,22 @@ void ScheduleDay::fromConfig(SprinklerTimerConfig &config)
 
   Timers.clear();
 
-  if (!config.defined)
+  if (!config.defined) {
+    alarmServiceLocked = false;
     return;
+  }
 
   SprinklerTimer *timer = new SprinklerTimer(Day, onTimerTick);
   timer->fromConfig(config);
   Timers.push_back(timer);
+
+  alarmServiceLocked = false;  // Re-enable alarm servicing
 }
 
 void ScheduleDay::fromJSON(JsonArray json)
 {
+  alarmServiceLocked = true;  // Prevent alarm servicing during update
+
   for (auto &t : Timers)
   {
     t->disable();
@@ -159,6 +169,8 @@ void ScheduleDay::fromJSON(JsonArray json)
     timer->fromJSON(value.as<JsonObject>());
     Timers.push_back(timer);
   }
+
+  alarmServiceLocked = false;  // Re-enable alarm servicing
 }
 
 String ScheduleDay::toJSON()

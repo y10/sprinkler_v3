@@ -12,10 +12,12 @@ class SprinklerZoneTimer {
   typedef std::function<void()> OnStopCallback;
 
   SprinklerZoneTimer(unsigned int zone, unsigned int duration, OnStopCallback onStop)
-      : Zone(zone), Duration(duration), StartTime(millis()), PauseTime(0), OnStop(onStop) {
+      : Zone(zone), Duration(duration), StartTime(millis()), PauseTime(0), OnStop(onStop), stopping(false) {
     unsigned long d = (duration ? duration : 5);
     unsigned long ms = d * 1000 * 60;
-    timer.once_ms(ms, +[](SprinklerZoneTimer* x) { x->OnStop(); }, this);
+    timer.once_ms(ms, +[](SprinklerZoneTimer* x) {
+      if (!x->stopping) x->OnStop();
+    }, this);
   }
 
   unsigned int Zone;
@@ -24,7 +26,8 @@ class SprinklerZoneTimer {
   unsigned long PauseTime;
 
   ~SprinklerZoneTimer() {
-    stop();
+    stopping = true;  // Set BEFORE detach to prevent callback execution
+    timer.detach();
   }
 
   void pause() {
@@ -39,12 +42,15 @@ class SprinklerZoneTimer {
     uint32_t d = (uint32_t)Duration * 60 * 1000;
     uint32_t p = PauseTime - StartTime;
     uint32_t ms = d - p;
-    timer.once_ms(ms, +[](SprinklerZoneTimer* x) { x->OnStop(); }, this);
+    timer.once_ms(ms, +[](SprinklerZoneTimer* x) {
+      if (!x->stopping) x->OnStop();
+    }, this);
     StartTime = millis() - p;
     PauseTime = 0;
   }
 
   void stop() {
+    stopping = true;  // Also set here for explicit stop
     PauseTime = 0;
     timer.detach();
   }
@@ -55,13 +61,14 @@ class SprinklerZoneTimer {
     return "{ \"state\": \"" + (String)state +
            "\", \"zone\":" + (String)Zone +
            ", \"millis\":" + (String)(ms) +
-           ", \"duration\": " + (String)Duration + 
+           ", \"duration\": " + (String)Duration +
            " }";
   }
 
  private:
   OnStopCallback OnStop;
   Ticker timer;
+  volatile bool stopping;  // Prevents callback execution during/after deletion
 };
 
 class SprinklerState {

@@ -1,4 +1,5 @@
 #include "sprinkler-time.h"
+#include "sprinkler-schedule.h"
 
 WsConsole timeLog("time");
 time_t lastSyncTime = Sprinkler.builtDate();
@@ -39,6 +40,9 @@ void setupTime(time_t t) {
 }
 
 void handleTicks() {
+  // Skip alarm servicing if schedule is being updated
+  if (alarmServiceLocked) return;
+
   time_t t = time(nullptr);
   if (t > builtDateTime) {
     Alarm.serviceAlarms();

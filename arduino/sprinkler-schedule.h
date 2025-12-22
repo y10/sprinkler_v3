@@ -12,6 +12,9 @@
 
 #include "sprinkler-config.h"
 
+// Lock flag to prevent alarm servicing during config updates
+extern volatile bool alarmServiceLocked;
+
 class SprinklerTimer {
  protected:
   timeDayOfWeek_t Day;

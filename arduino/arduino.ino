@@ -43,6 +43,10 @@ void tick() {
 }
 
 void end() {
+  // Boot safety: ensure all zones are OFF regardless of prior state
+  Sprinkler.stop();
+  Console.println("unit", "Boot safety: all zones OFF");
+
   digitalWrite(LED_PIN, LOW);
   ticker.detach();
   Console.println("unit", "Started.");
