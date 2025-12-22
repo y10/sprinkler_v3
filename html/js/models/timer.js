@@ -55,6 +55,6 @@ export class Timer {
     }
 
     remove() {
-        this.$timers.splice(this.$index);
+        this.$timers.splice(this.$index, 1);
     }
 }

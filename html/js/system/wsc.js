@@ -51,13 +51,18 @@ export class WsClient {
   }
 
   connect() {
-    self = this;
+    const self = this;
+    const MAX_RECONNECT_ATTEMPTS = 10;
 
     function reconnect(count = 1) {
+      if (count > MAX_RECONNECT_ATTEMPTS) {
+        console.error(`WS: max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached`);
+        return;
+      }
       if (!self.connect()) {
         setTimeout(() => {
-          reconnect(count++);
-        }, count * 5000);
+          reconnect(count + 1);
+        }, Math.min(count * 5000, 30000));
       }
     }
 

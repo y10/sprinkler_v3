@@ -115,6 +115,7 @@ export class ZoneList extends HTMLElement {
   }
 
   async updateAll(retryCount = 0) {
+    const MAX_RETRY_ATTEMPTS = 5;
     try {
       if (retryCount) {
         console.warn(`Attempt #${retryCount + 1}`);
@@ -130,9 +131,13 @@ export class ZoneList extends HTMLElement {
       }
     } catch (error) {
       console.error(error);
-      const delay = Math.pow(2, retryCount) * 1000;
+      if (retryCount >= MAX_RETRY_ATTEMPTS) {
+        console.error(`Max retry attempts (${MAX_RETRY_ATTEMPTS}) reached`);
+        return;
+      }
+      const delay = Math.min(Math.pow(2, retryCount) * 1000, 30000);
       await new Promise((done)=>setTimeout(done, delay));
-      await this.updateAll(++retryCount);
+      await this.updateAll(retryCount + 1);
     }
   }
 

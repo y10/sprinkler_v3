@@ -153,6 +153,7 @@ void SprinklerDevice::save(SprinklerConfig cfg) {
   cfg.version = version + 1;
   EEPROM.begin(EEPROM_SIZE);
   EEPROM.put(0, cfg);
+  EEPROM.commit();
   EEPROM.end();
   unitLog.println("Saved.");
 }
