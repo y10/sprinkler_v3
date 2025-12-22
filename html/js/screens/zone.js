@@ -258,6 +258,7 @@ export class Zone extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.clearTimerInterval();
     Wsc.off('state', this.onUpdate)
       .off('disconnect', this.onDisconnect)
       .off('connected', this.onConnected);

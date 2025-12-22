@@ -309,7 +309,7 @@ async function generateVersionHeader(settings: Settings): Promise<void> {
 #define SKETCH_VERSION "${settings.version}"\r\n
 #define SKETCH_MAX_ZONES ${settings.maxZones}\r\n
 #define SKETCH_MAX_TIMERS ${settings.maxTimers}\r\n
-#define SKETCH_TIMER_DEFAULT_LIMIT = ${settings.timeLimit} * 60;
+#define SKETCH_TIMER_DEFAULT_LIMIT ${settings.timeLimit}
 `;
 
   await Deno.writeTextFile(join(HTML_DEST, "settings.json.h"), header);

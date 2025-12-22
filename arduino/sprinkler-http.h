@@ -65,28 +65,52 @@ void setupHttp() {
 
   http.on("/api/zone/{}/state", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
     uint8_t rel = request->pathArg(0).toInt();
+    if (rel < 1 || rel > SKETCH_MAX_ZONES) {
+      request->send(400, "application/json", "{\"error\":\"Invalid zone\"}");
+      return;
+    }
     json(request, Sprinkler.Timers.toJSON(rel));
   });
 
   http.on("/api/zone/{}/start", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
     uint8_t rel = request->pathArg(0).toInt();
+    if (rel < 1 || rel > SKETCH_MAX_ZONES) {
+      request->send(400, "application/json", "{\"error\":\"Invalid zone\"}");
+      return;
+    }
     uint8_t dur = request->hasArg("d") ? request->arg("d").toInt() : 5;
+    // Enforce duration limit
+    if (dur > SKETCH_TIMER_DEFAULT_LIMIT) {
+      dur = SKETCH_TIMER_DEFAULT_LIMIT;
+    }
     console.println("GET: /api/zone/" + (String)rel + "/start?d=" + (String)dur);
     Sprinkler.start(rel, dur);
     json(request, Sprinkler.Timers.toJSON(rel));
   });
   http.on("/api/zone/{}/stop", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
     uint8_t rel = request->pathArg(0).toInt();
+    if (rel < 1 || rel > SKETCH_MAX_ZONES) {
+      request->send(400, "application/json", "{\"error\":\"Invalid zone\"}");
+      return;
+    }
     Sprinkler.stop(rel);
     json(request, Sprinkler.Timers.toJSON(rel));
   });
   http.on("/api/zone/{}/pause", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
     uint8_t rel = request->pathArg(0).toInt();
+    if (rel < 1 || rel > SKETCH_MAX_ZONES) {
+      request->send(400, "application/json", "{\"error\":\"Invalid zone\"}");
+      return;
+    }
     Sprinkler.pause(rel);
     json(request, Sprinkler.Timers.toJSON(rel));
   });
   http.on("/api/zone/{}/resume", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
     uint8_t rel = request->pathArg(0).toInt();
+    if (rel < 1 || rel > SKETCH_MAX_ZONES) {
+      request->send(400, "application/json", "{\"error\":\"Invalid zone\"}");
+      return;
+    }
     Sprinkler.resume(rel);
     json(request, Sprinkler.Timers.toJSON(rel));
   });

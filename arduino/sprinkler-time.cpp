@@ -46,7 +46,7 @@ void handleTicks() {
   time_t t = time(nullptr);
   if (t > builtDateTime) {
     Alarm.serviceAlarms();
-  } else if (lastSyncTime == t || (t - lastSyncTime) > 60000) {
+  } else if (lastSyncTime == t || (t - lastSyncTime) > 60) {
     syncTime();
   }
 }
