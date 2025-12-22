@@ -71,9 +71,7 @@ class ScheduleDay {
 
   void enable() {
     for (auto &timer : Timers) {
-      if (!timer->isEnabled()) {
-        timer->enable();
-      }
+      timer->enable();  // Always re-enable to handle NTP time corrections
     }
   }
 

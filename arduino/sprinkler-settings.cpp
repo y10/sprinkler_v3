@@ -45,6 +45,9 @@ void SprinklerSettings::fromJSON(JsonObject json)
         unsigned int zoneid = key.toInt();
         JsonObject value = kv.value().as<JsonObject>();
         SprinklerZone *zone = new SprinklerZone(zoneid, onTimerTick);
+        if (zone == nullptr) {
+            continue;
+        }
         zone->fromJSON(value);
         zones[zoneid] = zone;
     }
@@ -60,6 +63,9 @@ void SprinklerSettings::fromConfig(SprinklerConfig &config)
         if (config.zones[i].defined)
         {
             SprinklerZone *zone = new SprinklerZone(zoneid, onTimerTick);
+            if (zone == nullptr) {
+                continue;
+            }
             zone->fromConfig(config.zones[i]);
             zones[zoneid] = zone;
         }

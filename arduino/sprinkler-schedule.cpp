@@ -145,6 +145,10 @@ void ScheduleDay::fromConfig(SprinklerTimerConfig &config)
   }
 
   SprinklerTimer *timer = new SprinklerTimer(Day, onTimerTick);
+  if (timer == nullptr) {
+    alarmServiceLocked = false;
+    return;
+  }
   timer->fromConfig(config);
   Timers.push_back(timer);
 
@@ -166,6 +170,9 @@ void ScheduleDay::fromJSON(JsonArray json)
   for (JsonVariant value : json)
   {
     SprinklerTimer *timer = new SprinklerTimer(Day, onTimerTick);
+    if (timer == nullptr) {
+      continue;
+    }
     timer->fromJSON(value.as<JsonObject>());
     Timers.push_back(timer);
   }
