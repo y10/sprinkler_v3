@@ -112,6 +112,11 @@ export class PatternConnector extends HTMLElement {
     this.hoverTimer = null;
     this.dwellTime = 200; // ms to hover before connecting
 
+    // Store bound handlers for cleanup
+    this._onDragMove = this.onDragMove.bind(this);
+    this._onDragEnd = this.onDragEnd.bind(this);
+    this._onTouchMove = this.onTouchMove.bind(this);
+
     this.jQuery = jQuery(this).attachShadowTemplate(template, ($) => {
       this.wrapper = $('.pattern-wrapper');
       this.container = $('.pattern-container');
@@ -120,16 +125,37 @@ export class PatternConnector extends HTMLElement {
 
       // Drag event listeners on wrapper for full coverage
       const wrapper = this.wrapper.item();
-      wrapper.addEventListener('mousemove', this.onDragMove.bind(this));
-      wrapper.addEventListener('mouseup', this.onDragEnd.bind(this));
-      wrapper.addEventListener('mouseleave', this.onDragEnd.bind(this));
-      wrapper.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
-      wrapper.addEventListener('touchend', this.onDragEnd.bind(this));
-      wrapper.addEventListener('touchcancel', this.onDragEnd.bind(this));
+      wrapper.addEventListener('mousemove', this._onDragMove);
+      wrapper.addEventListener('mouseup', this._onDragEnd);
+      wrapper.addEventListener('mouseleave', this._onDragEnd);
+      wrapper.addEventListener('touchmove', this._onTouchMove, { passive: false });
+      wrapper.addEventListener('touchend', this._onDragEnd);
+      wrapper.addEventListener('touchcancel', this._onDragEnd);
     });
   }
 
   disconnectedCallback() {
+    // Remove wrapper event listeners
+    const wrapper = this.wrapper?.item();
+    if (wrapper) {
+      wrapper.removeEventListener('mousemove', this._onDragMove);
+      wrapper.removeEventListener('mouseup', this._onDragEnd);
+      wrapper.removeEventListener('mouseleave', this._onDragEnd);
+      wrapper.removeEventListener('touchmove', this._onTouchMove);
+      wrapper.removeEventListener('touchend', this._onDragEnd);
+      wrapper.removeEventListener('touchcancel', this._onDragEnd);
+    }
+
+    // Remove zone dot event listeners
+    for (const [zoneId, data] of Object.entries(this.zoneDots)) {
+      if (data.onMouseDown) {
+        data.element.removeEventListener('mousedown', data.onMouseDown);
+      }
+      if (data.onTouchStart) {
+        data.element.removeEventListener('touchstart', data.onTouchStart);
+      }
+    }
+
     this.jQuery().detach();
   }
 
@@ -152,9 +178,12 @@ export class PatternConnector extends HTMLElement {
       `;
 
       if (isDefined) {
-        dot.addEventListener('mousedown', (e) => this.onDragStart(zoneId, e));
-        dot.addEventListener('touchstart', (e) => this.onTouchStart(zoneId, e), { passive: false });
-        this.zoneDots[zoneId] = { element: dot };
+        // Store bound handlers for cleanup
+        const onMouseDown = (e) => this.onDragStart(zoneId, e);
+        const onTouchStart = (e) => this.onTouchStart(zoneId, e);
+        dot.addEventListener('mousedown', onMouseDown);
+        dot.addEventListener('touchstart', onTouchStart, { passive: false });
+        this.zoneDots[zoneId] = { element: dot, onMouseDown, onTouchStart };
       }
 
       this.container.item().appendChild(dot);
@@ -316,6 +345,8 @@ export class PatternConnector extends HTMLElement {
   drawLines() {
     const svg = this.linesEl.item();
     svg.innerHTML = '';
+    // Reset trailing line reference since innerHTML cleared it
+    this.trailingLine = null;
 
     for (let i = 1; i < this.selectedOrder.length; i++) {
       const fromId = this.selectedOrder[i - 1];

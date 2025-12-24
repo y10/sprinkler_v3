@@ -86,51 +86,55 @@ class AppModel {
       return;
     }
 
-    console.log('[Sequence] Recalculating with order:', seq.order, 'days:', seq.days);
+    try {
+      console.log('[Sequence] Recalculating with order:', seq.order, 'days:', seq.days);
 
-    // FIRST: Gather per-zone duration overrides (before clearing!)
-    const durations = {};
-    for (const zoneId of seq.order) {
-      const zone = this.zones(zoneId);
-      if (!zone.defined()) continue;
-      // Check if zone has a custom duration set
-      for (const day of seq.days) {
-        const timer = zone.days(day).timers(0);
-        if (timer.d && timer.d !== seq.duration && timer.d > 0) {
-          durations[zoneId] = timer.d;
-          break;
-        }
-      }
-    }
-    console.log('[Sequence] Duration overrides:', durations);
-
-    // Calculate schedule with per-zone durations
-    const schedule = seq.calculateSchedule(durations);
-
-    // THEN: Clear and apply new schedules
-    const weekdays = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    for (const zoneId of seq.order) {
-      const zone = this.zones(zoneId);
-      if (!zone.defined()) continue;
-      // Clear all weekdays for this zone
-      for (const day of weekdays) {
-        const timer = zone.days(day).timers(0);
-        timer.h = 0;
-        timer.m = 0;
-        timer.d = 0;
-      }
-    }
-    for (const day of seq.days) {
-      for (const [zoneId, times] of Object.entries(schedule)) {
+      // FIRST: Gather per-zone duration overrides (before clearing!)
+      const durations = {};
+      for (const zoneId of seq.order) {
         const zone = this.zones(zoneId);
         if (!zone.defined()) continue;
-        const timer = zone.days(day).timers(0);
-        timer.h = times.h;
-        timer.m = times.m;
-        timer.d = times.d;
+        // Check if zone has a custom duration set
+        for (const day of seq.days) {
+          const timer = zone.days(day).timers(0);
+          if (timer.d && timer.d !== seq.duration && timer.d > 0) {
+            durations[zoneId] = timer.d;
+            break;
+          }
+        }
       }
+      console.log('[Sequence] Duration overrides:', durations);
+
+      // Calculate schedule with per-zone durations
+      const schedule = seq.calculateSchedule(durations);
+
+      // Clear ONLY sequence days (not all weekdays) to preserve non-sequence timers
+      for (const zoneId of seq.order) {
+        const zone = this.zones(zoneId);
+        if (!zone.defined()) continue;
+        for (const day of seq.days) {
+          const timer = zone.days(day).timers(0);
+          timer.h = 0;
+          timer.m = 0;
+          timer.d = 0;
+        }
+      }
+
+      // Apply new schedules to sequence days
+      for (const day of seq.days) {
+        for (const [zoneId, times] of Object.entries(schedule)) {
+          const zone = this.zones(zoneId);
+          if (!zone.defined()) continue;
+          const timer = zone.days(day).timers(0);
+          timer.h = times.h;
+          timer.m = times.m;
+          timer.d = times.d;
+        }
+      }
+      console.log('[Sequence] Applied schedule:', schedule);
+    } catch (error) {
+      console.error('[Sequence] Recalculation failed:', error);
     }
-    console.log('[Sequence] Applied schedule:', schedule);
   }
 
   async load(modules) {
