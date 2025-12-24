@@ -1,4 +1,4 @@
-const DEFAULT_IP = "192.168.1.248";
+const DEFAULT_IP = "192.168.0.120";
 
 const ip = Deno.args[0] || DEFAULT_IP;
 

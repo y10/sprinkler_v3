@@ -131,6 +131,12 @@ bool SprinklerControl::fromJSON(JsonObject json) {
       SKEY = json["skey"].as<char *>();
       console.println(SKEY);
     }
+
+    // Disconnect from current network to trigger reconnection with new credentials
+    console.println("WiFi credentials changed - will reconnect");
+    connectedWifi = false;
+    WiFi.disconnect();
+
     dirty = true;
   }
 

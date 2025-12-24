@@ -6,7 +6,10 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:components.espressif.com)",
       "WebFetch(domain:deno.com)",
-      "WebFetch(domain:docs.platformio.org)"
+      "WebFetch(domain:docs.platformio.org)",
+      "WebFetch(domain:sinric.pro)",
+      "WebFetch(domain:sinricpro.github.io)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

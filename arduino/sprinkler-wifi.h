@@ -35,6 +35,9 @@ bool connectWifi(String ssid, String pass) {
   wifiLog.print(ssid);
   wifiLog.println("'");
 
+  // Enable persistent mode - credentials will be stored in ESP32's NVS
+  WiFi.persistent(true);
+
   if (WiFi.begin(ssid.c_str(), pass.c_str()) && WiFi.waitForConnectResult() == WL_CONNECTED) {
     wifiLog.println(WiFi.localIP());
     wifiLog.println("Connected.");
@@ -55,6 +58,13 @@ bool connectWifi(String ssid, String pass) {
 bool connectWifi() {
   WiFi.mode(WIFI_STA);
   wifiLog.println("Connecting...");
+
+  // If EEPROM has WiFi credentials, use those instead of cached credentials
+  if (Sprinkler.wifissid(true).length()) {
+    return connectWifi(Sprinkler.wifissid(true), Sprinkler.wifipass(true));
+  }
+
+  // No EEPROM credentials - try cached credentials
   if (WiFi.begin() && WiFi.waitForConnectResult(3000) == WL_CONNECTED) {
     wifiLog.println(WiFi.localIP());
     wifiLog.println("Connected.");
@@ -62,7 +72,7 @@ bool connectWifi() {
     return true;
   }
 
-  return Sprinkler.wifissid(true).length() && connectWifi(Sprinkler.wifissid(true), Sprinkler.wifipass(true));
+  return false;
 }
 
 void setupWifi() {
