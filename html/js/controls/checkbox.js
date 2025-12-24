@@ -16,12 +16,11 @@ const template = (self) => `
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
     color: var(--info-background-color);
   }
-  .checkbox-input:checked + .checkbox-tile .checkbox-icon, 
   .checkbox-input:checked + .checkbox-tile .checkbox-text {
     color: var(--info-background-color);
   }
 
-  .checkbox-input:disabled + .checkbox-tile .checkbox-icon, 
+  .checkbox-input:disabled + .checkbox-tile .checkbox-icon,
   .checkbox-input:disabled + .checkbox-tile .checkbox-text {
     color: #494949;
   }
@@ -38,13 +37,32 @@ const template = (self) => `
     cursor: pointer;
     position: relative;
   }
-  
+
   .checkbox-icon {
     transition: 0.375s ease;
+    position: relative;
   }
   .checkbox-icon svg {
-    width: 3rem;
-    height: 3rem;
+    width: 100%;
+    height: 100%;
+  }
+
+  .checkbox-icon-base,
+  .checkbox-icon-progress {
+    display: block;
+    width: 8rem;
+    height: 8rem;
+  }
+  .checkbox-icon-base {
+    color: #494949;
+  }
+  .checkbox-icon-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: var(--progress-color, var(--info-background-color));
+    clip-path: inset(100% 0 0 0);
+    transition: clip-path 0.3s ease, color 0.3s ease;
   }
 
   .checkbox-text {
@@ -64,7 +82,8 @@ const template = (self) => `
         <input type="checkbox" class="checkbox-input" ${self.hasAttribute("checked") ? 'checked' : ''} ${self.hasAttribute("disabled") ? 'disabled' : ''} />
         <span class="checkbox-tile">
             <span class="checkbox-icon">
-                <slot></slot>
+                <span class="checkbox-icon-base">${self._icon || ''}</span>
+                <span class="checkbox-icon-progress">${self._icon || ''}</span>
             </span>
             <input type="text" placeholder="${self.getAttribute("placeholder")}" value="${self.getAttribute("text")}" ${self.hasAttribute("readonly") ? 'disabled' : ''} class="checkbox-text" />
         </span>
@@ -80,8 +99,11 @@ export class Checkbox extends HTMLElement {
       this.textbox = $('.checkbox-text')
         .on('focus', this.onTextFocus.bind(this))
         .on('change', this.onChange.bind(this));
-      this.icon = $('.checkbox-icon')
+      this.iconEl = $('.checkbox-icon')
         .onClick(this.onClick.bind(this));
+      this.iconBase = $('.checkbox-icon-base');
+      this.iconProgress = $('.checkbox-icon-progress');
+      this._progress = 0;
     });
   }
 
@@ -119,11 +141,44 @@ export class Checkbox extends HTMLElement {
     this.textbox.item().value = value;
   }
 
+  get icon() {
+    return this._icon;
+  }
+
+  set icon(value) {
+    this._icon = value;
+    if (this.iconBase) {
+      this.iconBase.item().innerHTML = value;
+    }
+    if (this.iconProgress) {
+      this.iconProgress.item().innerHTML = value;
+    }
+  }
+
+  get progress() {
+    return this._progress;
+  }
+
+  set progress(value) {
+    this._progress = Math.max(0, Math.min(1, value));
+    if (this.iconProgress) {
+      // Clip green from top: gray "grows" down from top as progress increases
+      const clipTop = this._progress * 100;
+      this.iconProgress.item().style.clipPath = `inset(${clipTop}% 0 0 0)`;
+    }
+  }
+
+  set progressColor(value) {
+    if (this.iconProgress) {
+      this.iconProgress.item().style.setProperty('--progress-color', value);
+    }
+  }
+
   onClick(e) {
     e.cancelBubble = true;
     e.preventDefault();
     const {ticks, clicks} = e;
-    if (clicks > 1 || ticks > 800) 
+    if (clicks > 1 || ticks > 800)
     {
       this.onPick(e)
     }
@@ -133,7 +188,7 @@ export class Checkbox extends HTMLElement {
     }
   }
 
-  
+
   async onTextFocus(e) {
     await new Promise(done=>setTimeout(done, 800));
     if (this.checked == false) {
@@ -160,7 +215,7 @@ export class Checkbox extends HTMLElement {
   onPick(e) {
     if (this.dispatchEvent(new Event('pick', {cancelable: true}))) {
       this.dispatchEvent(new Event('picked'));
-    }    
+    }
   }
 
   onChange(e) {

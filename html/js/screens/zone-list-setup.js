@@ -36,9 +36,7 @@ h1 {
       (x) =>
         `<sketch-checkbox zone-id="${x.id}" placeholder="Zone ${x.id}" text="${
           x.name
-        }" ${x.defined() ? "checked" : ""} >
-    ${Icons.sprinkler}
-  </sketch-checkbox>`
+        }" ${x.defined() ? "checked" : ""}></sketch-checkbox>`
     )}
 </div>`;
 export class ZonesSettings extends HTMLElement {
@@ -48,7 +46,8 @@ export class ZonesSettings extends HTMLElement {
 
       $("sketch-checkbox")
         .on("checked", this.onZoneChecked.bind(this))
-        .on("changed", this.onZoneChanged.bind(this));
+        .on("changed", this.onZoneChanged.bind(this))
+        .forEach(el => el.icon = Icons.sprinkler);
     });
   }
 

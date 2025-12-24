@@ -36,10 +36,8 @@ h1 {
     ${App.zones().count() > 0 ? String.join(
       [...Array(MAX_ZONES).keys()].map((o, i) => App.zones(i + 1)),
       (x) =>
-        x.defined() ? 
-        `<sketch-checkbox zone-id="${x.id}" placeholder="Zone ${x.id}" text="${x.name}" readonly>
-          ${Icons.sprinkler}
-        </sketch-checkbox>` : 
+        x.defined() ?
+        `<sketch-checkbox zone-id="${x.id}" placeholder="Zone ${x.id}" text="${x.name}" readonly></sketch-checkbox>` : 
         `<span style="
           width: 7rem;
           display: flex;
@@ -51,11 +49,15 @@ h1 {
 </div>`;
 export class ZoneList extends HTMLElement {
   connectedCallback() {
+    this.activeTimers = {}; // Track running zones: { zone: { startTime, duration } }
+    this.progressInterval = null;
+
     this.jQuery = jQuery(this).attachShadowTemplate(template, ($) => {
       $("sketch-checkbox")
         .on('pick', this.onZoneClick.bind(this))
-        .on('check', this.onZoneChecking.bind(this));
-        
+        .on('check', this.onZoneChecking.bind(this))
+        .forEach(el => el.icon = Icons.sprinkler);
+
       Wsc.on("state", this.onUpdate, this);
       if ($(this).inViewport()) {
         this.updateAll().catch();
@@ -64,8 +66,41 @@ export class ZoneList extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.stopProgressInterval();
     Wsc.off("state", this.onUpdate);
     this.jQuery().detach();
+  }
+
+  startProgressInterval() {
+    if (this.progressInterval) return;
+    this.progressInterval = setInterval(() => this.tickProgress(), 1000);
+  }
+
+  stopProgressInterval() {
+    if (this.progressInterval) {
+      clearInterval(this.progressInterval);
+      this.progressInterval = null;
+    }
+  }
+
+  tickProgress() {
+    const now = Date.now();
+    let hasActive = false;
+
+    for (const [zone, timer] of Object.entries(this.activeTimers)) {
+      const elapsed = now - timer.startTime;
+      const total = timer.duration * 60 * 1000;
+      const progress = Math.min(elapsed / total, 1);
+
+      this.jQuery(`.container sketch-checkbox:nth-child(${zone})`).forEach(e => {
+        e.progress = progress;
+      });
+      hasActive = true;
+    }
+
+    if (!hasActive) {
+      this.stopProgressInterval();
+    }
   }
 
   onUpdate(event) {
@@ -142,19 +177,37 @@ export class ZoneList extends HTMLElement {
   }
 
   update(timer) {
-    const { state, zone } = timer;
+    const { state, zone, millis, duration } = timer;
     if (zone) {
       this.jQuery(`.container sketch-checkbox:nth-child(${zone})`).forEach(
         (e, i) => {
           if (state == "paused") {
+            delete this.activeTimers[zone];
             e.style.color = "var(--warn-background-color)";
+            e.progressColor = "var(--warn-background-color)";
             e.checked = false;
+            if (duration > 0) {
+              e.progress = millis / (duration * 60 * 1000);
+            }
           } else if (state == "stopped") {
+            delete this.activeTimers[zone];
             e.style.color = "";
+            e.progressColor = "";
             e.checked = false;
+            e.progress = 1; // Fully gray when stopped
           } else {
+            // Started - track for real-time updates
+            this.activeTimers[zone] = {
+              startTime: Date.now() - millis,
+              duration: duration
+            };
+            this.startProgressInterval();
             e.style.color = "";
+            e.progressColor = "var(--info-background-color)";
             e.checked = true;
+            if (duration > 0) {
+              e.progress = millis / (duration * 60 * 1000);
+            }
           }
         }
       );
