@@ -37,14 +37,17 @@ h1 {
       [...Array(MAX_ZONES).keys()].map((o, i) => App.zones(i + 1)),
       (x) =>
         x.defined() ?
-        `<sketch-checkbox zone-id="${x.id}" placeholder="Zone ${x.id}" text="${x.name}" readonly></sketch-checkbox>` : 
+        `<sketch-checkbox zone-id="${x.id}" placeholder="Zone ${x.id}" text="${x.name}" readonly></sketch-checkbox>` :
         `<span style="
           width: 7rem;
+          min-height: 7rem;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-        ">☼</span>`
+          opacity: 0.15;
+          color: #494949;
+        "><span style="display: block; width: 8rem; height: 8rem;">${Icons.sprinkler.replace(/width='100' height='100'/, "width='100%' height='100%'")}</span><span style="height: 1.5rem;"></span></span>`
     ) : '<sprinkler-list-empty></sprinkler-list-empty>'} 
 </div>`;
 export class ZoneList extends HTMLElement {

@@ -4,9 +4,7 @@ const MOCK_ZONES = [
     { name: "Front Lawn", index: 0 },
     { name: "Back Yard", index: 1 },
     { name: "Side Garden", index: 2 },
-    { name: "Flower Beds", index: 3 },
-    { name: "Vegetable Patch", index: 4 },
-    { name: "Driveway Strip", index: 5 }
+    { name: "Flower Beds", index: 3 }
 ];
 
 const MOCK_SETTINGS = {

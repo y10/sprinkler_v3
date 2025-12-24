@@ -12,12 +12,14 @@
         {
             "label": "Prebuild HTML",
             "type": "shell",
-            "command": "deno task build"
+            "command": "deno task build",
+            "problemMatcher": []
         },
         {
             "label": "Prebuild HTML (Dev)",
             "type": "shell",
-            "command": "deno task build:dev"
+            "command": "deno task build:dev",
+            "problemMatcher": []
         },
         {
             "label": "Compile ESP32",
