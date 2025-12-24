@@ -12,6 +12,7 @@ import { Snackbar } from "./controls/snackbar";
 import { Slider } from "./controls/slider";
 import { Spinner } from "./controls/spinner";
 import { Outlet } from "./controls/outlet";
+import { SprinklerIcon } from "./controls/sprinkler-icon";
 
 import { App } from "./system/app";
 
@@ -46,5 +47,6 @@ App.load({
     'sprinkler-list-empty': EmptyZoneList,
     'sprinkler-list': ZoneList,
     'sprinkler-zone': Zone,
+    'sprinkler-icon': SprinklerIcon,
     'sprinkler-app': Index,
 });

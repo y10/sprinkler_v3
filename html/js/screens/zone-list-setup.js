@@ -36,7 +36,7 @@ h1 {
       (x) =>
         `<sketch-checkbox zone-id="${x.id}" placeholder="Zone ${x.id}" text="${
           x.name
-        }" ${x.defined() ? "checked" : ""}></sketch-checkbox>`
+        }" ${x.defined() ? "checked" : ""} static-green></sketch-checkbox>`
     )}
 </div>`;
 export class ZonesSettings extends HTMLElement {

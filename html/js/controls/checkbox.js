@@ -19,6 +19,10 @@ const template = (self) => `
   .checkbox-input:checked + .checkbox-tile .checkbox-text {
     color: var(--info-background-color);
   }
+  /* For static checkboxes (no progress animation), show green when checked */
+  :host([static-green]) .checkbox-input:checked + .checkbox-tile .checkbox-icon-base {
+    color: var(--info-background-color);
+  }
 
   .checkbox-input:disabled + .checkbox-tile .checkbox-icon,
   .checkbox-input:disabled + .checkbox-tile .checkbox-text {

@@ -8,8 +8,14 @@ const template = (self) => `
 .pattern-wrapper {
   position: relative;
   width: 80vw;
-  max-width: 500px;
+  max-width: 1024px;
   margin: 0 auto;
+}
+
+@media screen and (min-height: 730px) {
+  .pattern-wrapper {
+    max-width: 500px;
+  }
 }
 
 .pattern-container {
@@ -47,11 +53,18 @@ const template = (self) => `
 
 .zone-dot.disabled {
   pointer-events: none;
-  opacity: 0.15;
+  opacity: 0.35;
 }
 
 .zone-dot.disabled svg {
   color: #494949;
+}
+
+/* Hide disabled zones on wide screens where they fit in one row */
+@media screen and (min-width: 600px) {
+  .zone-dot.disabled {
+    display: none;
+  }
 }
 
 .zone-dot .order-badge {
@@ -59,7 +72,7 @@ const template = (self) => `
   position: absolute;
   top: 0;
   right: -5px;
-  background: var(--info-background-color);
+  background: #494949;
   color: white;
   border-radius: 50%;
   width: 22px;
@@ -295,7 +308,7 @@ export class PatternConnector extends HTMLElement {
 
     if (!this.trailingLine) {
       this.trailingLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      this.trailingLine.setAttribute('stroke', 'var(--info-background-color)');
+      this.trailingLine.setAttribute('stroke', 'rgb(65, 184, 131)');
       this.trailingLine.setAttribute('stroke-width', '3');
       this.trailingLine.setAttribute('stroke-linecap', 'round');
       this.trailingLine.setAttribute('stroke-dasharray', '5,5');
@@ -378,7 +391,7 @@ export class PatternConnector extends HTMLElement {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', `M ${x1} ${y1} Q ${cpX} ${cpY} ${x2} ${y2}`);
       path.setAttribute('fill', 'none');
-      path.setAttribute('stroke', 'var(--info-background-color)');
+      path.setAttribute('stroke', 'rgb(65, 184, 131)');
       path.setAttribute('stroke-width', '3');
       path.setAttribute('stroke-linecap', 'round');
       svg.appendChild(path);

@@ -11,7 +11,7 @@ const template = (self) => `
   width: ${self.size};
   height: ${self.size};
   color: ${self.disabled ? '#494949' : 'var(--info-background-color)'};
-  opacity: ${self.disabled ? '0.15' : '1'};
+  opacity: ${self.disabled ? '0.35' : '1'};
   transition: color 0.2s;
 }
 .icon svg {

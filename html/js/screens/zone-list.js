@@ -31,6 +31,22 @@ h1 {
   }
 }
 
+.zone-placeholder {
+  width: 7rem;
+  min-height: 7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hide disabled zones on wide screens where they fit in one row */
+@media screen and (min-width: 600px) {
+  .zone-placeholder {
+    display: none;
+  }
+}
+
 </style>
 <div class="container">
     ${App.zones().count() > 0 ? String.join(
@@ -38,16 +54,7 @@ h1 {
       (x) =>
         x.defined() ?
         `<sketch-checkbox zone-id="${x.id}" placeholder="Zone ${x.id}" text="${x.name}" readonly></sketch-checkbox>` :
-        `<span style="
-          width: 7rem;
-          min-height: 7rem;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          opacity: 0.15;
-          color: #494949;
-        "><sprinkler-icon size="6rem" disabled></sprinkler-icon><span style="height: 1.5rem;"></span></span>`
+        `<span class="zone-placeholder"><sprinkler-icon size="6rem" disabled></sprinkler-icon><span style="height: 1.5rem;"></span></span>`
     ) : '<sprinkler-list-empty></sprinkler-list-empty>'} 
 </div>`;
 export class ZoneList extends HTMLElement {
