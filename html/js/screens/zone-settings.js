@@ -118,7 +118,7 @@ const template = (self) => `${style}
     <div class="timer__remove">${App.zones().count() > 1 ? '<span id="timer-remove"> - </span>' : '&nbsp;'}</div>
   </div>
 </div>
-<sketch-week id="week" class="week" value="${self.day.name}"></sketch-week>`
+<sketch-week id="week" class="week" ${self.isSequenced ? 'multi-select="true"' : `value="${self.day.name}"`}></sketch-week>`
 export class ZoneSettings extends HTMLElement {
 
   connectedCallback() {
@@ -126,6 +126,7 @@ export class ZoneSettings extends HTMLElement {
     this.zone = App.zones(this.getAttribute("zone-id"));
     this.day = this.zone.days("all");
     this.timer = this.day.timers(0);
+    this.isSequenced = false;
     this.render();
   }
 
@@ -135,6 +136,13 @@ export class ZoneSettings extends HTMLElement {
 
   onDurationChange(e) {
     this.timer.d = parseInt(e.srcElement.value);
+
+    // Check if this zone is part of a sequence - trigger cascade
+    const seq = App.sequence();
+    if (seq.order.includes(parseInt(this.zone.id))) {
+      App.recalculateSequence();
+    }
+
     this.render();
   }
 
@@ -149,6 +157,19 @@ export class ZoneSettings extends HTMLElement {
   }
 
   onDayChange(e) {
+    // In sequenced mode, days are controlled by sequence builder - ignore changes
+    if (this.isSequenced) {
+      // Re-apply the sequence days to reset the visual state
+      const seq = App.sequence();
+      setTimeout(() => {
+        const weekEl = this.CtlWeek.item();
+        if (weekEl && weekEl.setSelectedDays) {
+          weekEl.setSelectedDays(seq.days);
+        }
+      }, 10);
+      return;
+    }
+
     this.day = this.zone.days(e.detail.day);
     this.timer = this.day.timers(0);
     this.render();
@@ -207,5 +228,28 @@ export class ZoneSettings extends HTMLElement {
 
   activate() {
     App.zones().current = this.zone;
+
+    // Check if this zone is part of a sequence
+    const seq = App.sequence();
+    this.isSequenced = seq.order.includes(parseInt(this.zone.id)) && seq.days.length > 0;
+
+    if (this.isSequenced) {
+      // Use first sequence day for display
+      this.day = this.zone.days(seq.days[0]);
+    }
+
+    // Refresh timer data in case sequence builder changed it
+    this.timer = this.day.timers(0);
+    this.render();
+
+    // After render, set selected days on week picker if sequenced
+    if (this.isSequenced) {
+      setTimeout(() => {
+        const weekEl = this.CtlWeek.item();
+        if (weekEl && weekEl.setSelectedDays) {
+          weekEl.setSelectedDays(seq.days);
+        }
+      }, 50);
+    }
   }
 }

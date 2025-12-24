@@ -13,12 +13,14 @@
             "label": "Prebuild HTML",
             "type": "shell",
             "command": "deno task build",
+            "group": "none",
             "problemMatcher": []
         },
         {
             "label": "Prebuild HTML (Dev)",
             "type": "shell",
             "command": "deno task build:dev",
+            "group": "test",
             "problemMatcher": []
         },
         {
@@ -35,6 +37,7 @@
             "label": "Upload OTA",
             "type": "shell",
             "command": "deno run --allow-read --allow-run upload.ts ${input:deviceIP}",
+            "group": "none",
             "problemMatcher": []
         },
         {

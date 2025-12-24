@@ -6,9 +6,11 @@ import { Module } from "./module";
 import { Store } from "../storage";
 import { Zone } from "../models/zone";
 import { ZoneSet } from "../models/zoneSet";
+import { Sequence } from "../models/sequence";
 
 class AppModel {
   $settings = {};
+  $sequence = null;
 
   $zones = new ZoneSet({
     // Uncoment for test
@@ -66,11 +68,83 @@ class AppModel {
     return this.$zones.zone(id);
   }
 
+  /**
+   * @returns {Sequence}
+   */
+  sequence() {
+    if (!this.$sequence) {
+      this.$sequence = new Sequence(this.$settings.sequence || {});
+    }
+    return this.$sequence;
+  }
+
+  recalculateSequence() {
+    const seq = this.sequence();
+    // Only apply if we have BOTH pattern AND days
+    if (seq.order.length === 0 || seq.days.length === 0) {
+      console.log('[Sequence] Skip recalculate - incomplete:', { order: seq.order.length, days: seq.days.length });
+      return;
+    }
+
+    console.log('[Sequence] Recalculating with order:', seq.order, 'days:', seq.days);
+
+    // FIRST: Gather per-zone duration overrides (before clearing!)
+    const durations = {};
+    for (const zoneId of seq.order) {
+      const zone = this.zones(zoneId);
+      if (!zone.defined()) continue;
+      // Check if zone has a custom duration set
+      for (const day of seq.days) {
+        const timer = zone.days(day).timers(0);
+        if (timer.d && timer.d !== seq.duration && timer.d > 0) {
+          durations[zoneId] = timer.d;
+          break;
+        }
+      }
+    }
+    console.log('[Sequence] Duration overrides:', durations);
+
+    // Calculate schedule with per-zone durations
+    const schedule = seq.calculateSchedule(durations);
+
+    // THEN: Clear and apply new schedules
+    const weekdays = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    for (const zoneId of seq.order) {
+      const zone = this.zones(zoneId);
+      if (!zone.defined()) continue;
+      // Clear all weekdays for this zone
+      for (const day of weekdays) {
+        const timer = zone.days(day).timers(0);
+        timer.h = 0;
+        timer.m = 0;
+        timer.d = 0;
+      }
+    }
+    for (const day of seq.days) {
+      for (const [zoneId, times] of Object.entries(schedule)) {
+        const zone = this.zones(zoneId);
+        if (!zone.defined()) continue;
+        const timer = zone.days(day).timers(0);
+        timer.h = times.h;
+        timer.m = times.m;
+        timer.d = times.d;
+      }
+    }
+    console.log('[Sequence] Applied schedule:', schedule);
+  }
+
   async load(modules) {
     try {
-      const { zones } = await this.settings();
+      const { zones, sequence } = await this.settings();
       if (zones && Object.keys(zones).length > 0) {
         this.$zones = new ZoneSet(zones);
+      }
+      if (sequence) {
+        this.$sequence = new Sequence(sequence);
+      } else if (zones && Object.keys(zones).length > 1) {
+        // Try to derive sequence from existing zone schedules
+        this.$sequence = this.deriveSequenceFromZones(zones);
+        console.log('[Sequence] Derived from zones:', this.$sequence);
       }
       Module.register(modules);
     } catch(error) {
@@ -80,12 +154,87 @@ class AppModel {
     }
   }
 
+  deriveSequenceFromZones(zones) {
+    console.log('[Derive] Starting with zones:', zones);
+    // Find days that have schedules across multiple zones
+    const daySchedules = {};
+    const allDays = new Set();
+
+    for (const [zoneId, zone] of Object.entries(zones)) {
+      if (!zone.days) continue;
+      for (const [day, timers] of Object.entries(zone.days)) {
+        if (day === 'all' || !timers || timers.length === 0) continue;
+        const timer = timers[0];
+        if (!timer.d || timer.d === 0) continue; // Skip if no duration
+
+        allDays.add(day);
+        if (!daySchedules[day]) daySchedules[day] = [];
+        daySchedules[day].push({
+          zoneId: parseInt(zoneId),
+          minutes: timer.h * 60 + timer.m,
+          h: timer.h,
+          m: timer.m,
+          d: timer.d
+        });
+      }
+    }
+    console.log('[Derive] daySchedules:', daySchedules, 'allDays:', Array.from(allDays));
+
+    // Find the day with most zones scheduled
+    let bestDay = null;
+    let maxZones = 0;
+    for (const [day, schedules] of Object.entries(daySchedules)) {
+      if (schedules.length > maxZones) {
+        maxZones = schedules.length;
+        bestDay = day;
+      }
+    }
+
+    console.log('[Derive] bestDay:', bestDay, 'maxZones:', maxZones);
+
+    if (!bestDay || maxZones < 1) {
+      console.log('[Derive] Cannot derive - no valid schedules found');
+      return new Sequence(); // Can't derive sequence
+    }
+
+    // Sort zones by start time
+    const sorted = daySchedules[bestDay].sort((a, b) => a.minutes - b.minutes);
+
+    // Extract sequence data
+    const order = sorted.map(s => s.zoneId);
+    const first = sorted[0];
+    const duration = first.d;
+
+    // Calculate gap from time differences
+    let gap = 5; // default
+    if (sorted.length > 1) {
+      const diff = sorted[1].minutes - sorted[0].minutes;
+      gap = diff - duration;
+      if (gap < 0) gap = 5;
+    }
+
+    // Get all days that have the same zones scheduled
+    const days = Array.from(allDays);
+
+    const result = new Sequence({
+      order,
+      startHour: Time.toLocalHour(first.h),
+      startMinute: first.m,
+      duration,
+      gap,
+      days
+    });
+    console.log('[Derive] Result:', result);
+    return result;
+  }
+
   async save() {
     const spinner = Status.wait();
     const logLevel = this.logLevel();
     const chip = this.hostname();
     const name = this.friendlyName();
     const zones = this.$zones.toJson();
+    // Note: sequence is derived from zones, not stored separately
     const state = { logLevel, name, chip, zones };
     try {
       const json = await Store.put(state);
@@ -93,8 +242,8 @@ class AppModel {
         this.$settings = { ...json };
         if ("zones" in json && Object.keys(json.zones).length > 0) {
           this.$zones = new ZoneSet(json.zones);
-          return true;
         }
+        return true;
       }
     } catch (error) {
       Status.error(error);

@@ -4,7 +4,8 @@ const MOCK_ZONES = [
     { name: "Front Lawn", index: 0 },
     { name: "Back Yard", index: 1 },
     { name: "Side Garden", index: 2 },
-    { name: "Flower Beds", index: 3 }
+    { name: "Flower Beds", index: 3 },
+    { name: "Veggie Patch", index: 4 }
 ];
 
 const MOCK_SETTINGS = {
@@ -185,7 +186,8 @@ function routeRequest(method, url) {
     if (path === '/api/settings') {
         return {
             ...MOCK_SETTINGS,
-            zones: generateZonesSettings()
+            zones: generateZonesSettings(),
+            sequence: null // No sequence by default
         };
     }
     if (path === '/api/settings/zones') {

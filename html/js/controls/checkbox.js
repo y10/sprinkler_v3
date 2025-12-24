@@ -50,8 +50,8 @@ const template = (self) => `
   .checkbox-icon-base,
   .checkbox-icon-progress {
     display: block;
-    width: 8rem;
-    height: 8rem;
+    width: 6rem;
+    height: 6rem;
   }
   .checkbox-icon-base {
     color: #494949;

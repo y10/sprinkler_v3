@@ -6,9 +6,9 @@ const template = (self) => `
 <sketch-slider start="${self.currentIndex}">
   ${
     App.zones().count() > 0
-      ? ""
+      ? "<sprinkler-sequence-builder></sprinkler-sequence-builder>"
       : "<sprinkler-list-empty></sprinkler-list-empty>"
-  } 
+  }
   ${String.join(
     App.zones(),
     (x) =>

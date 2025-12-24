@@ -47,7 +47,7 @@ h1 {
           justify-content: center;
           opacity: 0.15;
           color: #494949;
-        "><span style="display: block; width: 8rem; height: 8rem;">${Icons.sprinkler.replace(/width='100' height='100'/, "width='100%' height='100%'")}</span><span style="height: 1.5rem;"></span></span>`
+        "><sprinkler-icon size="6rem" disabled></sprinkler-icon><span style="height: 1.5rem;"></span></span>`
     ) : '<sprinkler-list-empty></sprinkler-list-empty>'} 
 </div>`;
 export class ZoneList extends HTMLElement {

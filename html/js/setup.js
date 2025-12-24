@@ -1,4 +1,6 @@
 import { Week } from "./controls/week";
+import { PatternConnector } from "./controls/pattern-connector";
+import { SprinklerIcon } from "./controls/sprinkler-icon";
 import { Module } from "./system/module";
 import { Info } from "./screens/info";
 import { Setup } from "./screens/setup";
@@ -9,12 +11,16 @@ import { WifiSettings } from "./screens/setup-wifi";
 import { Firmware } from "./screens/update";
 import { ZoneSettings } from "./screens/zone-settings";
 import { Schedule } from "./screens/schedule";
+import { SequenceBuilder } from "./screens/sequence-builder";
 
 Module.register({
     'sketch-week': Week,
+    'pattern-connector': PatternConnector,
+    'sprinkler-icon': SprinklerIcon,
     'sprinkler-info': Info,
     'sprinkler-time': TimeSettings,
     'sprinkler-schedule': Schedule,
+    'sprinkler-sequence-builder': SequenceBuilder,
     'sprinkler-update': Firmware,
     'sprinkler-setup': Setup,
     'sprinkler-setup-general': GeneralSettings,

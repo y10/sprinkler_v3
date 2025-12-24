@@ -52,12 +52,24 @@ export class Week extends HTMLElement {
 
     connectedCallback() {
         this.value = this.getAttribute("value");
+        this.multiSelect = this.getAttribute("multi-select") === "true";
+
+        // Support initial selected days via attribute (comma-separated)
+        const initialDays = this.getAttribute("selected-days");
+        this.selectedDays = initialDays
+            ? new Set(initialDays.split(',').map(d => d.trim()))
+            : new Set();
+
         this.jQuery = jQuery(this).attachShadowTemplate(template, ($) => {
             this.Ul = $('ul');
         });
 
         ["S", "M", "T", "W", "T", "F", "S"].forEach((day, i) => {
-            this.Ul.append(`<li ${(i + 1 == WEEK_DAY_TO_INDEX[this.value]) ? "class='selected'" : ""}>${day}</li>`)
+            const dayName = WEEK_DAYS[i + 1];
+            const isSelected = this.multiSelect
+                ? this.selectedDays.has(dayName)
+                : (i + 1 == WEEK_DAY_TO_INDEX[this.value]);
+            this.Ul.append(`<li ${isSelected ? "class='selected'" : ""}>${day}</li>`)
         });
 
         this.Ul.on('click', this.onClick.bind(this));
@@ -83,14 +95,51 @@ export class Week extends HTMLElement {
     onSelect(index) {
         const ul = this.Ul.item();
         const li = ul.children[index];
-        if (this.jQuery(li).hasClass("selected") == false) {
-            this.jQuery("li").removeClass("selected");
-            this.jQuery(li).addClass("selected");
-            this.dispatchEvent(new CustomEvent('change', { detail: { day: WEEK_DAYS[index + 1] } }));
+        const day = WEEK_DAYS[index + 1];
+
+        if (this.multiSelect) {
+            // Multi-select mode: toggle day
+            if (this.selectedDays.has(day)) {
+                this.selectedDays.delete(day);
+                this.jQuery(li).removeClass("selected");
+            } else {
+                this.selectedDays.add(day);
+                this.jQuery(li).addClass("selected");
+            }
+            this.dispatchEvent(new CustomEvent('change', {
+                detail: { days: Array.from(this.selectedDays) }
+            }));
+        } else {
+            // Single-select mode: original behavior
+            if (this.jQuery(li).hasClass("selected") == false) {
+                this.jQuery("li").removeClass("selected");
+                this.jQuery(li).addClass("selected");
+                this.dispatchEvent(new CustomEvent('change', { detail: { day: WEEK_DAYS[index + 1] } }));
+            }
+            else {
+                this.jQuery("li").removeClass("selected");
+                this.dispatchEvent(new CustomEvent('change', { detail: { day: WEEK_DAYS[0] } }));
+            }
         }
-        else {
-            this.jQuery("li").removeClass("selected");
-            this.dispatchEvent(new CustomEvent('change', { detail: { day: WEEK_DAYS[0] } }));
+    }
+
+    // Set selected days programmatically (for multi-select mode)
+    setSelectedDays(days) {
+        if (!this.multiSelect) return;
+        this.selectedDays = new Set(days);
+        this.updateSelectedVisuals();
+    }
+
+    updateSelectedVisuals() {
+        const ul = this.Ul.item();
+        for (let i = 0; i < ul.children.length; i++) {
+            const li = ul.children[i];
+            const day = WEEK_DAYS[i + 1];
+            if (this.selectedDays.has(day)) {
+                this.jQuery(li).addClass("selected");
+            } else {
+                this.jQuery(li).removeClass("selected");
+            }
         }
     }
 }
