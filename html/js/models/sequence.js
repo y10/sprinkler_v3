@@ -5,11 +5,27 @@ export class Sequence {
         this.startMinute = data.startMinute ?? 0;
         this.duration = data.duration ?? 15;
         this.gap = data.gap ?? 5;
-        this.days = data.days || [];
+        this._days = data.days || [];
+        this._previousDays = [...this._days]; // Track previous state for cleanup
     }
 
     get isEmpty() {
         return this.order.length === 0;
+    }
+
+    get days() {
+        return this._days;
+    }
+
+    set days(value) {
+        // Store previous days before updating (for cleanup of removed days)
+        this._previousDays = [...this._days];
+        this._days = value;
+    }
+
+    // Get days that were removed (in previous but not in current)
+    get removedDays() {
+        return this._previousDays.filter(d => !this._days.includes(d));
     }
 
     // Calculate start time for zone at position in sequence
@@ -56,7 +72,12 @@ export class Sequence {
             startMinute: this.startMinute,
             duration: this.duration,
             gap: this.gap,
-            days: this.days
+            days: this._days
         };
+    }
+
+    // Reset previous days tracking (call after successful save)
+    commitDays() {
+        this._previousDays = [...this._days];
     }
 }

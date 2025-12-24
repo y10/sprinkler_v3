@@ -89,6 +89,22 @@ class AppModel {
     try {
       console.log('[Sequence] Recalculating with order:', seq.order, 'days:', seq.days);
 
+      // Clear timers for days that were REMOVED from the sequence
+      const removedDays = seq.removedDays;
+      if (removedDays.length > 0) {
+        console.log('[Sequence] Clearing removed days:', removedDays);
+        for (const zoneId of seq.order) {
+          const zone = this.zones(zoneId);
+          if (!zone.defined()) continue;
+          for (const day of removedDays) {
+            const timer = zone.days(day).timers(0);
+            timer.h = 0;
+            timer.m = 0;
+            timer.d = 0;
+          }
+        }
+      }
+
       // FIRST: Gather per-zone duration overrides (before clearing!)
       const durations = {};
       for (const zoneId of seq.order) {
@@ -131,6 +147,9 @@ class AppModel {
           timer.d = times.d;
         }
       }
+
+      // Commit the days change now that timers are updated
+      seq.commitDays();
       console.log('[Sequence] Applied schedule:', schedule);
     } catch (error) {
       console.error('[Sequence] Recalculation failed:', error);

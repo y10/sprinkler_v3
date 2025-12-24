@@ -196,6 +196,16 @@ String ScheduleDay::toJSON()
 
 void SprinklerSchedule::fromJSON(JsonObject json)
 {
+  // First, clear ALL existing days (proper "replace" semantics)
+  // This ensures days not in the incoming JSON get cleared
+  for (const auto &kv : days)
+  {
+    ScheduleDay *day = kv.second;
+    JsonArray emptyArr;
+    day->fromJSON(emptyArr);
+  }
+
+  // Then apply only the days specified in the incoming JSON
   for (JsonPair kv : json)
   {
     String key = kv.key().c_str();
