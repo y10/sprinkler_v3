@@ -58,7 +58,7 @@ const template = (self) => `
     height: 6rem;
   }
   .checkbox-icon-base {
-    color: #494949;
+    color: #888888;
   }
   .checkbox-icon-progress {
     position: absolute;
