@@ -15,6 +15,9 @@
 #include "includes/files.h"
 #include "sprinkler.h"
 
+// Forward declaration for Alexa integration (defined in sprinkler-alexa.h)
+bool processAlexaRequest(AsyncClient *client, bool isGet, String url, String body);
+
 AsyncWebServer http(80);
 AsyncWebSocket ws("/ws");
 
@@ -235,6 +238,18 @@ void setupHttp() {
   http.addHandler(new AsyncHTTPUpgradeHandler("/esp/upgrade", ASYNC_HTTP_POST, "https://ota.voights.net/sprinkler_v3.bin"));
 
   http.onNotFound([&](AsyncWebServerRequest *request) {
+    // Try Alexa/Hue request first (for GET requests like /description.xml)
+    String body = request->hasParam("body", true)
+                  ? request->getParam("body", true)->value()
+                  : String();
+    if (processAlexaRequest(request->client(),
+                            request->method() == ASYNC_HTTP_GET,
+                            request->url(),
+                            body)) {
+      return;  // Alexa handled it
+    }
+
+    // Not an Alexa request - handle as 404
     console.println("(404): " + request->url());
     if (!captivePortal(request)) {
       AsyncResponseStream *response = request->beginResponseStream("text/html");
@@ -269,6 +284,19 @@ void setupHttp() {
   });
   http.addHandler(&ws);
   Console.println("*wss", "Started.");
+
+  // Alexa request routing - handle POST bodies for Hue API
+  http.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data,
+                        size_t len, size_t index, size_t total) {
+    // Try to process as Alexa request
+    if (processAlexaRequest(request->client(),
+                            request->method() == ASYNC_HTTP_GET,
+                            request->url(),
+                            String((char *)data))) {
+      return;  // Alexa handled it
+    }
+    // Not an Alexa request - let other handlers process it
+  });
 
   http.begin();
   console.println("Started.");

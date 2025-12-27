@@ -108,6 +108,19 @@ public:
     }
   }
 
+  // Iterator for external access to zones (used by Alexa integration)
+  template<typename F>
+  void forEachZone(F callback) const {
+    for (const auto &kv : zones) {
+      callback(kv.first, kv.second);
+    }
+  }
+
+  // Get zone count
+  size_t zoneCount() const {
+    return zones.size();
+  }
+
 private:
   std::map<unsigned int, SprinklerZone *> zones;
   SprinklerZone::OnTimerTick onTimerTick;

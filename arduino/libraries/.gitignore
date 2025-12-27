@@ -2,7 +2,8 @@ ArduinoJson
 AsyncTcp
 ESPAsyncDNSServer
 ESPAsyncWebServer
-FauxmoESP
+FauxmoESP/examples/*
 Time
 TimeAlarms/*
 !TimeAlarms/TimeAlarms.h
+!FauxmoESP/*
