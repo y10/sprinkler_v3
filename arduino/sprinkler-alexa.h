@@ -48,15 +48,24 @@ void setupAlexa() {
     systemName = "Sprinkler";
   }
 
+  // Create plural form for "all zones" device (e.g., "Sprinkler" -> "Sprinklers")
+  String pluralName = systemName;
+  char lastChar = systemName.charAt(systemName.length() - 1);
+  if (lastChar == 's' || lastChar == 'x' || lastChar == 'z') {
+    pluralName += "es";
+  } else {
+    pluralName += "s";
+  }
+
   registeredDevices = 0;
 
-  // Register SYSTEM device first (device_id 0)
-  // This controls enable/disable of all scheduling
+  // Register ALL ZONES device first (device_id 0)
+  // "Turn off Sprinklers" = stop all zones
   {
-    unsigned char deviceId = fauxmo->addDevice(systemName.c_str());
+    unsigned char deviceId = fauxmo->addDevice(pluralName.c_str());
     deviceToZone[deviceId] = ALEXA_SYSTEM_DEVICE;
     registeredDevices++;
-    alexa_console.printf("Registered: %s (device=%d, SYSTEM)\n", systemName.c_str(), deviceId);
+    alexa_console.printf("Registered: %s (device=%d, ALL ZONES)\n", pluralName.c_str(), deviceId);
   }
 
   // Register each configured zone as an Alexa device (device_id 1+)
@@ -84,12 +93,18 @@ void setupAlexa() {
     unsigned int zoneId = deviceToZone[device_id];
 
     if (zoneId == ALEXA_SYSTEM_DEVICE) {
-      // System device: enable/disable scheduling
-      alexa_console.printf("Set: %s (SYSTEM) -> %s\n", device_name, state ? "ENABLED" : "DISABLED");
+      // All zones device: start all / stop all
+      alexa_console.printf("Set: %s (ALL) -> %s\n", device_name, state ? "ON" : "OFF");
       if (state) {
-        Sprinkler.enable();
+        // Turn on all configured zones
+        Sprinkler.Settings.forEachZone([](unsigned int zId, SprinklerZone* zone) {
+          if (zone->name().length() > 0) {
+            Sprinkler.start(zId, SKETCH_TIMER_DEFAULT_LIMIT);
+          }
+        });
       } else {
-        Sprinkler.disable();  // This also stops all active zones
+        // Stop all zones
+        Sprinkler.stop();
       }
     } else {
       // Zone device: start/stop watering
@@ -113,10 +128,10 @@ void setupAlexa() {
     unsigned int zoneId = deviceToZone[device_id];
 
     if (zoneId == ALEXA_SYSTEM_DEVICE) {
-      // System device: report if scheduling is enabled
-      state = Sprinkler.isEnabled();
+      // All zones device: report if any zone is watering
+      state = Sprinkler.isWatering();
       value = state ? 255 : 0;
-      alexa_console.printf("Get: %s (SYSTEM) -> %s\n", device_name, state ? "ENABLED" : "DISABLED");
+      alexa_console.printf("Get: %s (ALL) -> %s\n", device_name, state ? "ON" : "OFF");
     } else {
       // Zone device: report if zone is watering
       state = Sprinkler.Timers.isWatering(zoneId);
@@ -128,7 +143,7 @@ void setupAlexa() {
   // Enable FauxmoESP (starts UDP listener for SSDP discovery)
   fauxmo->enable(true);
 
-  alexa_console.printf("Started (%d devices: 1 system + %d zones)\n",
+  alexa_console.printf("Started (%d devices: 1 all-zones + %d zones)\n",
                        registeredDevices, registeredDevices - 1);
 }
 
