@@ -333,7 +333,15 @@ String fauxmoESP::_deviceJson(unsigned char id, bool all = true) {
 	if (all)
 	{
 		if (_getCallback) {
-			_getCallback(id, _devices[id].name, device.state, device.value);
+			bool callbackState = device.state;
+			unsigned char callbackValue = device.value;
+			_getCallback(id, _devices[id].name, callbackState, callbackValue);
+			// Use callback's state but preserve stored brightness value
+			device.state = callbackState;
+			// Only use callback value if device has no stored brightness
+			if (_devices[id].value == 0) {
+				device.value = callbackValue;
+			}
 		}
 
 		snprintf_P(
@@ -457,19 +465,32 @@ bool fauxmoESP::_onTCPControl(AsyncClient *client, String url, String body) {
 	}
 
 	// "state" request
-	if ((url.indexOf("state") > 0) && (body.length() > 0)) {
+	if (url.indexOf("state") > 0) {
 
 		// Get the index
 		int pos = url.indexOf("lights");
 		if (-1 == pos) return false;
 
-		DEBUG_MSG_FAUXMO("[FAUXMO] Handling state request\n");
-
-		// Get the index
+		// Get the device id
 		unsigned char id = url.substring(pos+7).toInt();
 		if (id > 0) {
 
 			--id;
+
+			// Empty body = Alexa confirmation/polling request, just return current state
+			if (body.length() == 0) {
+				DEBUG_MSG_FAUXMO("[FAUXMO] Handling empty state request (confirmation)\n");
+				char response[strlen_P(FAUXMO_TCP_STATE_RESPONSE)+10];
+				snprintf_P(
+					response, sizeof(response),
+					FAUXMO_TCP_STATE_RESPONSE,
+					id+1, _devices[id].state ? "true" : "false", id+1, _devices[id].value
+				);
+				_sendTCPResponse(client, "200 OK", response, "application/json");
+				return true;
+			}
+
+			DEBUG_MSG_FAUXMO("[FAUXMO] Handling state request\n");
 
 			// Brightness
 			pos = body.indexOf("bri");
@@ -490,7 +511,7 @@ bool fauxmoESP::_onTCPControl(AsyncClient *client, String url, String body) {
 				FAUXMO_TCP_STATE_RESPONSE,
 				id+1, _devices[id].state ? "true" : "false", id+1, _devices[id].value
 			);
-			_sendTCPResponse(client, "200 OK", response, "text/xml");
+			_sendTCPResponse(client, "200 OK", response, "application/json");
 
 			if (_setCallback) {
 				_setCallback(id, _devices[id].name, _devices[id].state, _devices[id].value);
