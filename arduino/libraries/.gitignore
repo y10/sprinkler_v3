@@ -3,6 +3,11 @@ AsyncTcp
 ESPAsyncDNSServer
 ESPAsyncWebServer
 FauxmoESP/examples/*
+PubSubClient/examples/*
+PubSubClient/tests/*
+PubSubClient/.gitignore
+PubSubClient/.travis.yml
+PubSubClient/CHANGES.txt
 Time
 TimeAlarms/*
 !TimeAlarms/TimeAlarms.h
