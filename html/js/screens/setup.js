@@ -6,6 +6,7 @@ const html = `
   <sprinkler-setup-general></sprinkler-setup-general>
   <sprinkler-setup-wifi></sprinkler-setup-wifi>
   <sprinkler-setup-alexa></sprinkler-setup-alexa>
+  <sprinkler-setup-mqtt></sprinkler-setup-mqtt>
   <sprinkler-time></sprinkler-time>
 </sketch-slider>
 `

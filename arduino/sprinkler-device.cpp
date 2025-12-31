@@ -20,6 +20,11 @@ SprinklerDevice::SprinklerDevice()
   full_name = "sprinkler-v" + (String)SKETCH_VERSION_MAJOR + "." + (String)SKETCH_VERSION_MINOR + "." + (String)SKETCH_VERSION_RELEASE + "_" + String(getChipId(), HEX);
   loglevel = logInfo;
   alexa_enabled = true;
+  mqtt_host = "";
+  mqtt_port = 1883;
+  mqtt_user = "";
+  mqtt_pass = "";
+  mqtt_enabled = false;
   version = 0;
 }
 
@@ -130,6 +135,13 @@ SprinklerConfig SprinklerDevice::load() {
     unitLog.print("alexa enabled: ");
     unitLog.println(cfg.alexa_enabled ? "yes" : "no");
     alexa_enabled = cfg.alexa_enabled;
+    mqtt_host = cfg.mqtt_host;
+    mqtt_port = cfg.mqtt_port > 0 ? cfg.mqtt_port : 1883;
+    mqtt_user = cfg.mqtt_user;
+    mqtt_pass = cfg.mqtt_pass;
+    mqtt_enabled = cfg.mqtt_enabled;
+    unitLog.print("mqtt enabled: ");
+    unitLog.println(mqtt_enabled ? "yes" : "no");
     unitLog.print("rev: ");
     unitLog.println(cfg.version);
     version = cfg.version;
@@ -156,6 +168,11 @@ void SprinklerDevice::save(SprinklerConfig cfg) {
   cfg.source = pins[0] == ENG_PIN ? 'P' : 'U';
   cfg.loglevel = loglevel;
   cfg.alexa_enabled = alexa_enabled;
+  strncpy(cfg.mqtt_host, mqtt_host.c_str(), 63);
+  cfg.mqtt_port = mqtt_port;
+  strncpy(cfg.mqtt_user, mqtt_user.c_str(), 31);
+  strncpy(cfg.mqtt_pass, mqtt_pass.c_str(), 63);
+  cfg.mqtt_enabled = mqtt_enabled;
   cfg.version = version + 1;
   EEPROM.begin(EEPROM_SIZE);
   EEPROM.put(0, cfg);

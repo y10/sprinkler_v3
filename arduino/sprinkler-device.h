@@ -21,6 +21,13 @@ class SprinklerDevice {
   String disp_name;
   String full_name;
 
+  // MQTT settings
+  String mqtt_host;
+  uint16_t mqtt_port;
+  String mqtt_user;
+  String mqtt_pass;
+  bool mqtt_enabled;
+
   // [0] water source
   // [1] zone 1
   // ...
@@ -70,6 +77,22 @@ class SprinklerDevice {
 
   bool alexaEnabled() { return alexa_enabled; }
   void alexaEnabled(bool enabled) { alexa_enabled = enabled; }
+
+  // MQTT configuration accessors
+  String mqttHost() { return mqtt_host; }
+  void mqttHost(const char* host) { mqtt_host = host; }
+
+  uint16_t mqttPort() { return mqtt_port; }
+  void mqttPort(uint16_t port) { mqtt_port = port; }
+
+  String mqttUser() { return mqtt_user; }
+  void mqttUser(const char* user) { mqtt_user = user; }
+
+  String mqttPass() { return mqtt_pass; }
+  void mqttPass(const char* pass) { mqtt_pass = pass; }
+
+  bool mqttEnabled() { return mqtt_enabled; }
+  void mqttEnabled(bool enabled) { mqtt_enabled = enabled; }
 
   SprinklerConfig load();
 

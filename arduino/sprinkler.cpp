@@ -122,6 +122,31 @@ bool SprinklerControl::fromJSON(JsonObject json) {
     dirty = true;
   }
 
+  if (json.containsKey("mqttHost")) {
+    Device.mqttHost(json["mqttHost"].as<const char*>());
+    dirty = true;
+  }
+
+  if (json.containsKey("mqttPort")) {
+    Device.mqttPort(json["mqttPort"].as<uint16_t>());
+    dirty = true;
+  }
+
+  if (json.containsKey("mqttUser")) {
+    Device.mqttUser(json["mqttUser"].as<const char*>());
+    dirty = true;
+  }
+
+  if (json.containsKey("mqttPass")) {
+    Device.mqttPass(json["mqttPass"].as<const char*>());
+    dirty = true;
+  }
+
+  if (json.containsKey("mqttEnabled")) {
+    Device.mqttEnabled(json["mqttEnabled"].as<bool>());
+    dirty = true;
+  }
+
   if (json.containsKey("name")) {
     Device.dispname(json["name"].as<char *>());
     dirty = true;

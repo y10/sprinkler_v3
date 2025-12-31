@@ -3,6 +3,7 @@
 
 #include "sprinkler-alexa.h"
 #include "sprinkler-http.h"
+#include "sprinkler-mqtt.h"
 #include "sprinkler-ota.h"
 #include "sprinkler-setup.h"
 #include "sprinkler-time.h"
@@ -26,6 +27,7 @@ void setup() {
   setupHttp();
   setupOTA();
   setupAlexa();
+  setupMqtt();
 
   end();
 }
@@ -34,6 +36,7 @@ void loop() {
   handleWifi();
   handleOTA();
   handleAlexa();
+  handleMqtt();
   handleTicks();
 }
 

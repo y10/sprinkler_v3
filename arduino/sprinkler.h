@@ -62,6 +62,10 @@ class SprinklerControl {
   String toJSON() {
     return (String) "{ \"logLevel\": " + (String)logLevelNumber() +
       ", \"alexaEnabled\": " + (Device.alexaEnabled() ? "true" : "false") +
+      ", \"mqttHost\": \"" + Device.mqttHost() +
+      "\", \"mqttPort\": " + Device.mqttPort() +
+      ", \"mqttUser\": \"" + Device.mqttUser() +
+      "\", \"mqttEnabled\": " + (Device.mqttEnabled() ? "true" : "false") +
       ", \"name\": \"" + Device.dispname() +
       "\", \"ssid\": \"" + wifissid() +
       "\", \"host\": \"" + Device.hostname() +

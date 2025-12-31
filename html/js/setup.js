@@ -6,6 +6,7 @@ import { Info } from "./screens/info";
 import { Setup } from "./screens/setup";
 import { GeneralSettings } from "./screens/setup-general";
 import { AlexaSettings } from "./screens/setup-alexa";
+import { MqttSettings } from "./screens/setup-mqtt";
 import { ZonesSettings } from "./screens/zone-list-setup";
 import { TimeSettings } from "./screens/time";
 import { WifiSettings } from "./screens/setup-wifi";
@@ -27,6 +28,7 @@ Module.register({
     'sprinkler-setup': Setup,
     'sprinkler-setup-general': GeneralSettings,
     'sprinkler-setup-alexa': AlexaSettings,
+    'sprinkler-setup-mqtt': MqttSettings,
     'sprinkler-setup-wifi': WifiSettings,
     'sprinkler-list-setup': ZonesSettings,
     'sprinkler-settings-zone': ZoneSettings,

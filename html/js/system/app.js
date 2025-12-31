@@ -56,6 +56,26 @@ class AppModel {
     return ssid || "";
   }
 
+  mqttHost() {
+    const { mqttHost } = this.$settings;
+    return mqttHost || "";
+  }
+
+  mqttPort() {
+    const { mqttPort } = this.$settings;
+    return mqttPort || 1883;
+  }
+
+  mqttUser() {
+    const { mqttUser } = this.$settings;
+    return mqttUser || "";
+  }
+
+  mqttEnabled() {
+    const { mqttEnabled } = this.$settings;
+    return mqttEnabled || false;
+  }
+
   /**
    * @param {string} id - zone id to return;
    * @returns {Zone}
