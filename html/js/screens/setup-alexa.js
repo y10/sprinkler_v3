@@ -1,13 +1,15 @@
 import { jQuery } from "../system/jquery";
 import { App } from "../system/app";
+import { Http } from "../system/http";
+import { Status } from "../system/status";
 
 const html = `
 <div class="container">
     <h1>Alexa</h1>
-    <div class="devices">
-        <button id="alexa-toggle" class="device-btn system"></button>
-        <div id="zone-list"></div>
-    </div>
+    <br />
+    <br />
+    <br />
+    <button type="button" id="alexa-toggle">Enable</button>
 </div>
 `;
 
@@ -24,70 +26,49 @@ h1 {
 @media screen and (min-height: 730px) {
   h1 { top: 6%; }
 }
-.devices {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-#zone-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.device-btn {
+button {
   border: 0;
   border-radius: 0.3rem;
-  padding: 12px 16px;
-  font-size: 1rem;
+  line-height: 2.4rem;
+  font-size: 1.2rem;
   width: 100%;
-  text-align: center;
-  cursor: pointer;
+  margin: 8px 0;
 }
-.device-btn.system {
-  background-color: var(--secondary-background-color);
-  color: var(--secondary-text-color);
-}
-.device-btn.system.enabled {
+button.enabled {
   background-color: var(--info-background-color);
   color: var(--info-text-color);
 }
-.device-btn.zone {
+button.disabled {
   background-color: var(--secondary-background-color);
   color: var(--secondary-text-color);
-  opacity: 0.7;
-  cursor: default;
 }
 </style>
 `;
 
 export class AlexaSettings extends HTMLElement {
-  settings = {};
   alexaEnabled = true;
 
   connectedCallback() {
     this.jQuery = jQuery(this).attachShadowTemplate(style + html, async ($) => {
       this.alexaEnabled = App.alexaEnabled();
 
-      // System toggle button
-      this.$toggle = $("#alexa-toggle");
+      this.$btnToggle = $("#alexa-toggle");
       this.updateToggleButton();
-      this.$toggle.on("click", () => {
-        this.alexaEnabled = !this.alexaEnabled;
-        this.settings["alexaEnabled"] = this.alexaEnabled;
-        this.updateToggleButton();
-      });
-
-      // Zone list (read-only)
-      const $zoneList = $("#zone-list");
-      for (const zone of App.zones()) {
-        if (zone.defined() && zone.name) {
-          const btn = document.createElement("button");
-          btn.className = "device-btn zone";
-          btn.textContent = zone.name;
-          btn.disabled = true;
-          $zoneList.item().appendChild(btn);
+      this.$btnToggle.on("click", async () => {
+        const newState = !this.alexaEnabled;
+        const spinner = Status.wait(5000);
+        try {
+          await Http.json('POST', 'api/settings', { alexaEnabled: newState });
+          this.alexaEnabled = newState;
+          this.updateToggleButton();
+          spinner.close();
+          await App.wait(3000);
+          App.reload();
+        } catch (error) {
+          Status.error(error);
+          spinner.close();
         }
-      }
+      });
     });
   }
 
@@ -96,21 +77,8 @@ export class AlexaSettings extends HTMLElement {
   }
 
   updateToggleButton() {
-    const name = App.friendlyName() || "Sprinkler";
-    // Pluralize
-    const lastChar = name.charAt(name.length - 1);
-    const plural = (lastChar === 's' || lastChar === 'x' || lastChar === 'z')
-      ? name + "es"
-      : name + "s";
-
-    this.$toggle.item().textContent = plural;
-    this.$toggle.item().classList.toggle("enabled", this.alexaEnabled);
-  }
-
-  onSave(e) {
-    if (Object.keys(this.settings).length > 0) {
-      e.settings = { ...e.settings, ...this.settings };
-      e.restartRequested = true;
-    }
+    const btn = this.$btnToggle.item();
+    btn.textContent = this.alexaEnabled ? "Enabled" : "Disabled";
+    btn.className = this.alexaEnabled ? "enabled" : "disabled";
   }
 }

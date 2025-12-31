@@ -8,10 +8,10 @@ const html = `
   <h1>Console</h1>
   <div class="header">
     <div class="levels">
-      <button class="level-btn none" data-level="0">none</button>
-      <button class="level-btn error" data-level="1">error</button>
-      <button class="level-btn warn" data-level="2">warn</button>
       <button class="level-btn info" data-level="3">info</button>
+      <button class="level-btn warn" data-level="2">warn</button>
+      <button class="level-btn error" data-level="1">error</button>
+      <button class="level-btn none" data-level="0">none</button>
     </div>
     <div class="actions">
       <button id="copy" title="Copy logs"></button>
@@ -52,32 +52,37 @@ h1 {
 }
 .level-btn {
   padding: 3px 8px;
-  border: 0;
+  border: 1.5px solid transparent;
   border-radius: 4px;
   font-size: 0.8rem;
   cursor: pointer;
-  opacity: 0.4;
-  transition: opacity 0.15s;
+  transition: all 0.15s;
   min-width: 3rem;
   text-align: center;
+  background: transparent;
 }
-.level-btn.active {
-  opacity: 1;
-}
-.level-btn.none {
+.level-btn.none { color: #888; }
+.level-btn.error { color: var(--alert-background-color); }
+.level-btn.warn { color: var(--warn-background-color); }
+.level-btn.info { color: #fff; }
+.level-btn.none.active {
   background: #666;
+  border-color: #666;
   color: #ccc;
 }
-.level-btn.error {
+.level-btn.error.active {
   background: var(--alert-background-color);
+  border-color: var(--alert-background-color);
   color: var(--alert-text-color);
 }
-.level-btn.warn {
+.level-btn.warn.active {
   background: var(--warn-background-color);
+  border-color: var(--warn-background-color);
   color: var(--warn-text-color);
 }
-.level-btn.info {
+.level-btn.info.active {
   background: var(--secondary-background-color);
+  border-color: var(--secondary-background-color);
   color: var(--secondary-text-color);
 }
 .actions {

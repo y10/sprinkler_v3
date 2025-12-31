@@ -49,14 +49,24 @@ button {
   color: var(--alert-text-color);
 }
 
-#status.enabled {
-  background-color: var(--info-background-color);
-  color: var(--info-text-color);
+#schedule {
+  position: relative;
 }
 
-#status.disabled {
-  background-color: var(--secondary-background-color);
-  color: var(--secondary-text-color);
+#schedule-check {
+  position: absolute;
+  right: 12px;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  opacity: 0.3;
+}
+
+#schedule-check.enabled {
+  opacity: 1;
+  color: var(--info-background-color);
 }
 </style>
 
@@ -65,8 +75,7 @@ button {
   <button id="zones">zones</button>
   <button id="pipe" style="display: none">city water</button>
   <button id="pump">well water</button>
-  <button id="schedule">schedule</button>
-  <button id="status">enabled</button>
+  <button id="schedule"><span id="schedule-text">schedule</span><span id="schedule-check">✓</span></button>
   <button id="update">firmware update</button>
   <button id="reset">factory reset</button>
   <button id="console">console</button>
@@ -81,11 +90,11 @@ export class Menu extends HTMLElement {
       $('#reset').on('click', this.reset.bind(this));
       $('#restart').on('click', this.restart.bind(this));
       $('#zones').on('click', this.gotoZones.bind(this));
-      $('#schedule').on('click', this.gotoSchedule.bind(this));
+      $('#schedule-text').on('click', this.gotoSchedule.bind(this));
+      this.$scheduleCheck = $('#schedule-check').on('click', this.toggleSchedule.bind(this));
       $('#setup').on('click', this.gotoSetup.bind(this));
       this.$btnPipe = $('#pipe').on('click', this.usePump.bind(this));
       this.$btnPump = $('#pump').on('click', this.usePipe.bind(this));
-      this.$btnState = $('#status').on('click', this.gotoStatus.bind(this));
       $('#update').on('click', this.gotoUpdate.bind(this));
       $('#console').on('click', this.gotoConsole.bind(this));
       $('#info').on('click', this.gotoInfo.bind(this));
@@ -142,17 +151,18 @@ export class Menu extends HTMLElement {
     App.reload();
   }
 
-  async gotoStatus(e) {
+  async toggleSchedule(e) {
+    e.stopPropagation();
     const spinner = Status.wait(5000);
-    const element = e.srcElement;
-    const command = element.innerText == "enabled" ? "disable" : "enable";
+    const isEnabled = this.$scheduleCheck.item().classList.contains('enabled');
+    const command = isEnabled ? "disable" : "enable";
     try {
       await Http.json('POST', `api/schedule/${command}`);
       this.refresh();
       spinner.close();
     } catch (error) {
       Status.error(error);
-    } 
+    }
     await spinner;
   }
 
@@ -185,8 +195,7 @@ export class Menu extends HTMLElement {
       console.error(error);
     }
 
-    this.$btnState.text(state.enabled ? "enabled" : "disabled");
-    this.$btnState.item().className = state.enabled ? "enabled" : "disabled";
+    this.$scheduleCheck.item().className = state.enabled ? "enabled" : "";
     this.$btnPump.css('display', state.source == "pump" ? '' : 'none');
     this.$btnPipe.css('display', state.source != "pump" ? '' : 'none');
   }

@@ -182,7 +182,7 @@ void publishDiscovery() {
         "\"pl_on\":\"ON\"," +
         "\"pl_off\":\"OFF\"," +
         "\"avty_t\":\"" + availTopic + "\"," +
-        "\"ic\":\"mdi:sprinkler\"," +
+        "\"ic\":\"mdi:sprinkler-variant\"," +
         deviceInfo + "}";
 
       String discTopic = "homeassistant/switch/" + deviceId + "_zone" + zoneId + "/config";
