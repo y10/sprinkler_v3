@@ -26,7 +26,7 @@ typedef struct {
         logLevel = "error";
         break;
       case logWarn:
-        logLevel = "worn";
+        logLevel = "warn";
         break;
       case logInfo:
         logLevel = "info";

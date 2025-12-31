@@ -267,18 +267,18 @@ void setupHttp() {
     String url = server->url();
     switch (type) {
       case WS_EVT_CONNECT:
-        Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", id, ip[0], ip[1], ip[2], ip[3], url.c_str());
+        console.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", id, ip[0], ip[1], ip[2], ip[3], url.c_str());
         server->text(id, "{\"connection\": \"Connected\"}");
         Console.attach(&ws);
         break;
       case WS_EVT_DISCONNECT:
-        Serial.printf("[%u] Disconnected!\n", id);
+        console.printf("[%u] Disconnected!\n", id);
         break;
       case WS_EVT_PONG:
-        Serial.printf("[%u] Pong [%u]: %s\n", id, len, (len) ? (char *)data : "");
+        console.printf("[%u] Pong [%u]: %s\n", id, len, (len) ? (char *)data : "");
         break;
       case WS_EVT_ERROR:
-        Serial.printf("[%u] Error (%u): %s\n", id, *((uint16_t *)arg), (char *)data);
+        console.printf("[%u] Error (%u): %s\n", id, *((uint16_t *)arg), (char *)data);
         break;
     }
   });

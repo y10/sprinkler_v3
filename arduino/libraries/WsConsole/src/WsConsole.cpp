@@ -13,11 +13,9 @@ WsConsole::WsConsole(const char *scope)
 
 WsConsole &WsConsole::logFor(const char *scope) {
   if (consoles.find(scope) == consoles.end()) {
-    return *new WsConsole(scope);
+    consoles[scope] = new WsConsole(scope);
   }
-
-  WsConsole &log = *consoles[scope];
-  return log;
+  return *consoles[scope];
 }
 
 void WsConsole::begin(unsigned long baud) {
@@ -28,7 +26,7 @@ void WsConsole::begin(unsigned long baud) {
 void WsConsole::logLevel(logLevel_t level) { loglevel = level; }
 
 void WsConsole::attach(AsyncWebSocket *wsp) {
-  if (loglevel == logNone)
+  if (loglevel == logNone || wsp == nullptr)
     return;
 
   if (!wss)
@@ -107,6 +105,9 @@ size_t WsConsole::write(const uint8_t *data, size_t size) {
 }
 
 void WsConsole::broadcast(log_t log) {
+  log.scope.replace("\"", "\\\"");
+  log.scope.replace("\r", "");
+  log.scope.replace("\n", "");
   log.entry.replace("\"", "\\\"");
   log.entry.replace("\r", "");
   log.entry.replace("\n", "");
@@ -119,7 +120,7 @@ void WsConsole::broadcast(log_t log) {
     logs.erase(logs.begin());
   }
 
-  if (wss) {
+  if (wss && wss->count() > 0) {
     wss->textAll("{ \"event\": " + log.toJson() + " }");
     logIndex++;
   }
