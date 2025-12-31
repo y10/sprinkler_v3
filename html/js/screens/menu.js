@@ -48,6 +48,16 @@ button {
   background-color: var(--alert-background-color);
   color: var(--alert-text-color);
 }
+
+#status.enabled {
+  background-color: var(--info-background-color);
+  color: var(--info-text-color);
+}
+
+#status.disabled {
+  background-color: var(--secondary-background-color);
+  color: var(--secondary-text-color);
+}
 </style>
 
 <div class="container">
@@ -176,6 +186,7 @@ export class Menu extends HTMLElement {
     }
 
     this.$btnState.text(state.enabled ? "enabled" : "disabled");
+    this.$btnState.item().className = state.enabled ? "enabled" : "disabled";
     this.$btnPump.css('display', state.source == "pump" ? '' : 'none');
     this.$btnPipe.css('display', state.source != "pump" ? '' : 'none');
   }
