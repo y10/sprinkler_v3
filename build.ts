@@ -185,7 +185,6 @@ async function gzipFiles(): Promise<void> {
   const filesToGzip = [
     "index.html",
     "favicon.png",
-    "apple-touch-icon.png",
     "manifest.json",
     "js/setup.js", // Note: index.js is inlined into index.html
   ];
@@ -248,7 +247,6 @@ async function generateHeaders(): Promise<void> {
   const gzFiles = [
     "index.html.gz",
     "favicon.png.gz",
-    "apple-touch-icon.png.gz",
     "manifest.json.gz",
     "js/setup.js.gz",
   ];

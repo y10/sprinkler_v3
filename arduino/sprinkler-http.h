@@ -57,8 +57,8 @@ void setupHttp() {
 
   http.on("/", [&](AsyncWebServerRequest *rqt) { gzip(rqt, "text/html", SKETCH_INDEX_HTML_GZ, sizeof(SKETCH_INDEX_HTML_GZ)); });
   http.on("/favicon.png", [&](AsyncWebServerRequest *rqt) { gzip(rqt, "image/png", SKETCH_FAVICON_PNG_GZ, sizeof(SKETCH_FAVICON_PNG_GZ)); });
-  http.on("/favicon.ico", [&](AsyncWebServerRequest *rqt) { gzip(rqt, "image/x-icon", SKETCH_FAVICON_PNG_GZ, sizeof(SKETCH_FAVICON_PNG_GZ)); });
-  http.on("/apple-touch-icon.png", [&](AsyncWebServerRequest *rqt) { gzip(rqt, "image/png", SKETCH_APPLE_TOUCH_ICON_PNG_GZ, sizeof(SKETCH_APPLE_TOUCH_ICON_PNG_GZ)); });
+  http.on("/favicon.ico", [&](AsyncWebServerRequest *rqt) { rqt->redirect("/favicon.png"); });
+  http.on("/apple-touch-icon.png", [&](AsyncWebServerRequest *rqt) { rqt->redirect("/favicon.png"); });
   http.on("/manifest.json", [&](AsyncWebServerRequest *rqt) { gzip(rqt, "application/json", SKETCH_MANIFEST_JSON_GZ, sizeof(SKETCH_MANIFEST_JSON_GZ)); });
   http.on("/js/setup.js", [&](AsyncWebServerRequest *rqt) { gzip(rqt, "application/javascript", SKETCH_SETUP_JS_GZ, sizeof(SKETCH_SETUP_JS_GZ)); });
 
@@ -209,6 +209,11 @@ void setupHttp() {
     StreamString jStream;
     Console.printTo(jStream);
     json(request, jStream);
+  });
+
+  http.on("/esp/log/clear", ASYNC_HTTP_POST, [&](AsyncWebServerRequest *request) {
+    Console.clearLogs();
+    json(request, "{ \"ok\": true }");
   });
 
   http.on("/esp/logLevel", ASYNC_HTTP_POST, [&](AsyncWebServerRequest *request) {
