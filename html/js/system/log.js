@@ -29,6 +29,7 @@ class EventLog {
 
     clear() {
         this.#log = [];
+        Http.json('POST', 'esp/log/clear').catch(() => {});
     }
 
     async fetch() {

@@ -111,6 +111,17 @@ void SprinklerControl::resume(unsigned int zone) {
 bool SprinklerControl::fromJSON(JsonObject json) {
   bool dirty = false;
 
+  if (json.containsKey("logLevel")) {
+    Device.logLevel(json["logLevel"].as<uint8_t>());
+    Console.logLevel((logLevel_t)json["logLevel"].as<uint8_t>());
+    dirty = true;
+  }
+
+  if (json.containsKey("alexaEnabled")) {
+    Device.alexaEnabled(json["alexaEnabled"].as<bool>());
+    dirty = true;
+  }
+
   if (json.containsKey("name")) {
     Device.dispname(json["name"].as<char *>());
     dirty = true;

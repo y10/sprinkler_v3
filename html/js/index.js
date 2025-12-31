@@ -33,7 +33,8 @@ App.load({
             'update': 'sprinkler-update',
             'zones': 'sprinkler-list-setup',
             'setup': 'sprinkler-setup',
-            'info': 'sprinkler-info'
+            'info': 'sprinkler-info',
+            'console': 'sprinkler-console'
         }
     }),
     'sketch-slider': Slider,

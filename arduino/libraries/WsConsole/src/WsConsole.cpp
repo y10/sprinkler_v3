@@ -40,7 +40,7 @@ WsConsole &WsConsole::error(const char *scope, const char *line) {
 }
 
 WsConsole &WsConsole::error(const String text) {
-  if (loglevel != logError)
+  if (loglevel < logError)
     return *this;
 
   Serial.printf("[error] %s\r\n", text.c_str());
@@ -79,7 +79,7 @@ WsConsole &WsConsole::warn(const String text) {
 }
 
 size_t WsConsole::write(const uint8_t *data, size_t size) {
-  if (loglevel == logNone)
+  if (loglevel < logInfo)
     return 0;
 
   size_t len = log.write(data, size);
@@ -147,6 +147,11 @@ WsConsole &WsConsole::println(const char *scope, const char *line) {
   WsConsole &console = logFor(scope);
   console.println(line);
   return console;
+}
+
+void WsConsole::clearLogs() {
+  logs.clear();
+  logIndex = 0;
 }
 
 WsConsole Console = WsConsole();

@@ -69,6 +69,8 @@ class WsConsole : public Print, Printable {
 
   virtual size_t printTo(Print &p) const override;
 
+  static void clearLogs();
+
   WsConsole &println(const char *scope, const char *line);
 
   using Print::println;

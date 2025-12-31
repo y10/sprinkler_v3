@@ -15,6 +15,7 @@ class SprinklerDevice {
 
  private:
   uint8_t loglevel;
+  bool alexa_enabled;
 
   String host_name;
   String disp_name;
@@ -61,7 +62,14 @@ class SprinklerDevice {
 
   logLevel_t logLevel(const char *level);
 
+  void logLevel(uint8_t level) { loglevel = level; }
+
   const char *logLevel();
+
+  uint8_t logLevelNumber() { return loglevel; }
+
+  bool alexaEnabled() { return alexa_enabled; }
+  void alexaEnabled(bool enabled) { alexa_enabled = enabled; }
 
   SprinklerConfig load();
 

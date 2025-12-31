@@ -19,6 +19,7 @@ SprinklerDevice::SprinklerDevice()
   host_name = "sprinkler-" + String(getChipId(), HEX);
   full_name = "sprinkler-v" + (String)SKETCH_VERSION_MAJOR + "." + (String)SKETCH_VERSION_MINOR + "." + (String)SKETCH_VERSION_RELEASE + "_" + String(getChipId(), HEX);
   loglevel = logInfo;
+  alexa_enabled = true;
   version = 0;
 }
 
@@ -126,6 +127,9 @@ SprinklerConfig SprinklerDevice::load() {
     unitLog.print("water source: ");
     unitLog.println(cfg.source);
     pins[0] = cfg.source == 'U' ? UTL_PIN : ENG_PIN;
+    unitLog.print("alexa enabled: ");
+    unitLog.println(cfg.alexa_enabled ? "yes" : "no");
+    alexa_enabled = cfg.alexa_enabled;
     unitLog.print("rev: ");
     unitLog.println(cfg.version);
     version = cfg.version;
@@ -135,6 +139,7 @@ SprinklerConfig SprinklerDevice::load() {
     strcpy(cfg.host_name, host_name.c_str());
     strcpy(cfg.full_name, full_name.c_str());
     cfg.loglevel = logInfo;
+    cfg.alexa_enabled = true;
     cfg.version = version;
     unitLog.println("no config found.");
   }
@@ -150,6 +155,7 @@ void SprinklerDevice::save(SprinklerConfig cfg) {
   strcpy(cfg.full_name, full_name.c_str());
   cfg.source = pins[0] == ENG_PIN ? 'P' : 'U';
   cfg.loglevel = loglevel;
+  cfg.alexa_enabled = alexa_enabled;
   cfg.version = version + 1;
   EEPROM.begin(EEPROM_SIZE);
   EEPROM.put(0, cfg);

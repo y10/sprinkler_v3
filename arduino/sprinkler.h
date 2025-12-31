@@ -42,7 +42,17 @@ class SprinklerControl {
   const String wifipass(bool persisted = false);
 
   void logLevel(const char *level) {
+    logLevel_t lvl = Device.logLevel(level);
+    Console.logLevel(lvl);
+  }
+
+  void logLevel(uint8_t level) {
     Device.logLevel(level);
+    Console.logLevel((logLevel_t)level);
+  }
+
+  uint8_t logLevelNumber() {
+    return Device.logLevelNumber();
   }
 
   bool water(String source) {
@@ -50,7 +60,14 @@ class SprinklerControl {
   }
 
   String toJSON() {
-    return (String) "{ \"logLevel\": \"" + (String)Device.logLevel() + "\", \"name\": \"" + Device.dispname() + "\", \"ssid\": \"" + wifissid() + "\", \"host\": \"" + Device.hostname() + "\",  \"zones\": " + Settings.toJSON() + ",  \"source\": \"" + Device.source() + "\",  \"enabled\": " + isEnabled() + " }";
+    return (String) "{ \"logLevel\": " + (String)logLevelNumber() +
+      ", \"alexaEnabled\": " + (Device.alexaEnabled() ? "true" : "false") +
+      ", \"name\": \"" + Device.dispname() +
+      "\", \"ssid\": \"" + wifissid() +
+      "\", \"host\": \"" + Device.hostname() +
+      "\", \"zones\": " + Settings.toJSON() +
+      ", \"source\": \"" + Device.source() +
+      "\", \"enabled\": " + isEnabled() + " }";
   }
 
   bool fromJSON(JsonObject json);

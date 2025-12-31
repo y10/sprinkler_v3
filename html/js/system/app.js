@@ -277,16 +277,24 @@ class AppModel {
   }
 
   /**
-   * @param {string} id - zone id to return;
-   * @returns {Zone}
+   * @param {number} level - log level to set (0=none, 1=error, 2=warn, 3=info)
+   * @returns {number}
    */
   logLevel(level) {
     if (level === undefined) {
       const { logLevel } = this.$settings;
-      return logLevel || "none";
+      return logLevel ?? 3;  // Default to Info
     }
 
     return this.loglevelAsync(level);
+  }
+
+  /**
+   * @returns {boolean}
+   */
+  alexaEnabled() {
+    const { alexaEnabled } = this.$settings;
+    return alexaEnabled ?? true;  // Default enabled
   }
 
   async loglevelAsync(level) {

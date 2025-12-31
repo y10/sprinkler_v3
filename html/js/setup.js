@@ -5,6 +5,7 @@ import { Module } from "./system/module";
 import { Info } from "./screens/info";
 import { Setup } from "./screens/setup";
 import { GeneralSettings } from "./screens/setup-general";
+import { AlexaSettings } from "./screens/setup-alexa";
 import { ZonesSettings } from "./screens/zone-list-setup";
 import { TimeSettings } from "./screens/time";
 import { WifiSettings } from "./screens/setup-wifi";
@@ -12,6 +13,7 @@ import { Firmware } from "./screens/update";
 import { ZoneSettings } from "./screens/zone-settings";
 import { Schedule } from "./screens/schedule";
 import { SequenceBuilder } from "./screens/sequence-builder";
+import { Console } from "./screens/console";
 
 Module.register({
     'sketch-week': Week,
@@ -24,7 +26,9 @@ Module.register({
     'sprinkler-update': Firmware,
     'sprinkler-setup': Setup,
     'sprinkler-setup-general': GeneralSettings,
+    'sprinkler-setup-alexa': AlexaSettings,
     'sprinkler-setup-wifi': WifiSettings,
     'sprinkler-list-setup': ZonesSettings,
     'sprinkler-settings-zone': ZoneSettings,
+    'sprinkler-console': Console,
 });

@@ -24,7 +24,7 @@ static unsigned int registeredDevices = 0;
 bool processAlexaRequest(AsyncClient *client, bool isGet, String url, String body);
 
 void handleAlexa() {
-  if (fauxmo && (WiFi.getMode() & WIFI_STA)) {
+  if (fauxmo && Sprinkler.Device.alexaEnabled() && (WiFi.getMode() & WIFI_STA)) {
     fauxmo->handle();
   }
 }
@@ -32,6 +32,11 @@ void handleAlexa() {
 void setupAlexa() {
   if (!(WiFi.getMode() & WIFI_STA)) {
     alexa_console.println("Skipped (not in STA mode)");
+    return;
+  }
+
+  if (!Sprinkler.Device.alexaEnabled()) {
+    alexa_console.println("Disabled");
     return;
   }
 

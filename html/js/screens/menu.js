@@ -34,9 +34,14 @@ button {
   color: var(--info-text-color);
 }
 
-#update{
+#update {
   background-color: var(--warn-background-color);
   color: var(--warn-text-color);
+}
+
+#restart {
+  background-color: var(--accent-background-color);
+  color: var(--accent-text-color);
 }
 
 #reset{
@@ -46,14 +51,15 @@ button {
 </style>
 
 <div class="container">
+  <button id="setup">setup</button>
   <button id="zones">zones</button>
-  <button id="setup">general</button>
   <button id="pipe" style="display: none">city water</button>
   <button id="pump">well water</button>
   <button id="schedule">schedule</button>
   <button id="status">enabled</button>
   <button id="update">firmware update</button>
   <button id="reset">factory reset</button>
+  <button id="console">console</button>
   <button id="restart">restart</button>
   <br>
   <div align="right">v${Version}</div>
@@ -71,6 +77,7 @@ export class Menu extends HTMLElement {
       this.$btnPump = $('#pump').on('click', this.usePipe.bind(this));
       this.$btnState = $('#status').on('click', this.gotoStatus.bind(this));
       $('#update').on('click', this.gotoUpdate.bind(this));
+      $('#console').on('click', this.gotoConsole.bind(this));
       $('#info').on('click', this.gotoInfo.bind(this));
 
       if ($(this).inViewport()) {
@@ -97,6 +104,10 @@ export class Menu extends HTMLElement {
 
   gotoUpdate() {
     Router.navigate('update');
+  }
+
+  gotoConsole() {
+    Router.navigate('console');
   }
 
   async usePipe() {
