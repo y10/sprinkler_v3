@@ -271,11 +271,34 @@ export class Console extends HTMLElement {
 
   copy() {
     const text = this.getLogsText();
-    navigator.clipboard.writeText(text).then(() => {
+
+    // Try modern clipboard API first (requires HTTPS)
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        Status.information("Logs copied to clipboard");
+      }).catch(() => {
+        this.copyFallback(text);
+      });
+    } else {
+      this.copyFallback(text);
+    }
+  }
+
+  copyFallback(text) {
+    // Fallback for HTTP: use temporary textarea
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand("copy");
       Status.information("Logs copied to clipboard");
-    }).catch(() => {
+    } catch (e) {
       Status.error("Failed to copy logs");
-    });
+    }
+    document.body.removeChild(textarea);
   }
 
   download() {

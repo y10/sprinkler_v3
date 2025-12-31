@@ -291,10 +291,10 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
       unsigned int zone = zoneStr.toInt();
 
       if (zone >= 1 && zone <= SKETCH_MAX_ZONES) {
-        if (message == "ON") {
+        if (message == "ON" && !Sprinkler.Timers.isWatering(zone)) {
           mqtt_console.printf("Starting zone %d\n", zone);
           Sprinkler.start(zone, SKETCH_TIMER_DEFAULT_LIMIT);
-        } else if (message == "OFF") {
+        } else if (message == "OFF" && Sprinkler.Timers.isWatering(zone)) {
           mqtt_console.printf("Stopping zone %d\n", zone);
           Sprinkler.stop(zone);
         }
