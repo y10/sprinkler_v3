@@ -79,11 +79,7 @@ bool mqttConnect() {
     // Publish online status
     mqttClient.publish(availTopic.c_str(), "online", true);
 
-    // Subscribe to command topics
-    String deviceCmdTopic = mqttTopicPrefix + "/cmd";
-    mqttClient.subscribe(deviceCmdTopic.c_str());
-    mqtt_console.printf("Subscribed to %s\n", deviceCmdTopic.c_str());
-
+    // Subscribe to zone command topics
     String zoneCmdTopic = mqttTopicPrefix + "/zone/+/cmd";
     mqttClient.subscribe(zoneCmdTopic.c_str());
     mqtt_console.printf("Subscribed to %s\n", zoneCmdTopic.c_str());
@@ -170,38 +166,6 @@ void publishDiscovery() {
 
   String availTopic = mqttTopicPrefix + "/status";
 
-  // Publish "all zones" switch
-  {
-    String name = Sprinkler.Device.dispname();
-    // Pluralize
-    char lastChar = name.charAt(name.length() - 1);
-    if (lastChar == 's' || lastChar == 'x' || lastChar == 'z') {
-      name += "es";
-    } else {
-      name += "s";
-    }
-
-    String uniqueId = deviceId + "_all";
-    String stateTopic = mqttTopicPrefix + "/state";
-    String cmdTopic = mqttTopicPrefix + "/cmd";
-
-    String payload = String("{") +
-      "\"name\":\"" + name + "\"," +
-      "\"uniq_id\":\"" + uniqueId + "\"," +
-      "\"stat_t\":\"" + stateTopic + "\"," +
-      "\"cmd_t\":\"" + cmdTopic + "\"," +
-      "\"pl_on\":\"ON\"," +
-      "\"pl_off\":\"OFF\"," +
-      "\"avty_t\":\"" + availTopic + "\"," +
-      "\"ic\":\"mdi:sprinkler-variant\"," +
-      deviceInfo + "}";
-
-    String discTopic = "homeassistant/switch/" + deviceId + "/config";
-    mqttClient.publish(discTopic.c_str(), payload.c_str(), true);
-    mqtt_console.printf("Discovery: %s\n", name.c_str());
-    delay(100);
-  }
-
   // Publish each zone
   Sprinkler.Settings.forEachZone([&deviceId, &deviceInfo, &availTopic](unsigned int zoneId, SprinklerZone* zone) {
     if (zone->name().length() > 0) {
@@ -242,12 +206,6 @@ void publishState(unsigned int zone) {
 void publishAllStates() {
   if (!mqttClient.connected()) return;
 
-  // Publish device state (ON if any zone watering)
-  String allTopic = mqttTopicPrefix + "/state";
-  String allState = Sprinkler.isWatering() ? "ON" : "OFF";
-  mqttClient.publish(allTopic.c_str(), allState.c_str(), true);
-
-  // Publish each zone state
   Sprinkler.Settings.forEachZone([](unsigned int zoneId, SprinklerZone* zone) {
     if (zone->name().length() > 0) {
       publishState(zoneId);
@@ -261,26 +219,6 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   message.toUpperCase();
 
   mqtt_console.printf("Received: %s = %s\n", topic, message.c_str());
-
-  // Device-level command (all zones): sprinkler/<hostname>/cmd
-  if (topicStr.equals(mqttTopicPrefix + "/cmd")) {
-    if (message == "ON") {
-      mqtt_console.println("Starting all zones");
-      Sprinkler.Settings.forEachZone([](unsigned int zId, SprinklerZone* zone) {
-        if (zone->name().length() > 0) {
-          Sprinkler.start(zId, SKETCH_TIMER_DEFAULT_LIMIT);
-        }
-      });
-    } else if (message == "OFF") {
-      mqtt_console.println("Stopping all zones");
-      Sprinkler.Settings.forEachZone([](unsigned int zId, SprinklerZone* zone) {
-        if (zone->name().length() > 0) {
-          Sprinkler.stop(zId);
-        }
-      });
-    }
-    return;
-  }
 
   // Parse zone number from topic: .../zone/N/cmd
   int zoneIdx = topicStr.indexOf("/zone/");
