@@ -257,6 +257,26 @@ bool SprinklerControl::fromJSON(JsonObject json) {
         uint8_t zoneId = seq.order[i];
         String zoneKey = String(zoneId);
 
+        // Get zone's custom duration from incoming JSON before clearing days
+        uint8_t zoneDuration = seq.duration;  // Default to template
+        if (zonesJson.containsKey(zoneKey)) {
+          JsonObject existingZone = zonesJson[zoneKey];
+          if (existingZone.containsKey("days")) {
+            JsonObject existingDays = existingZone["days"];
+            // Check any day for existing duration
+            for (JsonPair kv : existingDays) {
+              JsonArray timers = kv.value().as<JsonArray>();
+              if (timers.size() > 0) {
+                JsonObject timerObj = timers[0];
+                if (timerObj.containsKey("d") && timerObj["d"].as<uint8_t>() > 0) {
+                  zoneDuration = timerObj["d"].as<uint8_t>();
+                  break;
+                }
+              }
+            }
+          }
+        }
+
         // Ensure zone exists in JSON
         if (!zonesJson.containsKey(zoneKey)) {
           zonesJson.createNestedObject(zoneKey);
@@ -280,12 +300,12 @@ bool SprinklerControl::fromJSON(JsonObject json) {
             JsonObject timer = dayArr.createNestedObject();
             timer["h"] = timerHour;
             timer["m"] = timerMinute;
-            timer["d"] = seq.duration;
+            timer["d"] = zoneDuration;  // Use zone's custom duration (or template if none)
           }
         }
 
-        // Move to next zone's start time
-        currentMinutes += seq.duration + seq.gap;
+        // Move to next zone's start time using zone's actual duration
+        currentMinutes += zoneDuration + seq.gap;
       }
     }
 

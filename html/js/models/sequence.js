@@ -1,3 +1,5 @@
+import { App } from "../system/app";
+
 export class Sequence {
     constructor(data = {}) {
         this.order = data.order || [];
@@ -82,5 +84,56 @@ export class Sequence {
     // Reset previous days tracking (call after successful save)
     commitDays() {
         this._previousDays = [...this._days];
+    }
+
+    // Check if any zone in sequence has a duration different from template
+    hasCustomDurations() {
+        for (const zoneId of this.order) {
+            const zone = App.zones(zoneId);
+            if (!zone || !zone.defined()) continue;
+
+            // Get duration from first available day
+            const day = this._days.length > 0 ? zone.days(this._days[0]) : zone.days('all');
+            const timer = day.timers(0);
+            const zoneDuration = timer.d || 0;
+
+            if (zoneDuration > 0 && zoneDuration !== this.duration) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Get list of zones with custom durations
+    getCustomDurationZones() {
+        const customZones = [];
+        for (const zoneId of this.order) {
+            const zone = App.zones(zoneId);
+            if (!zone || !zone.defined()) continue;
+
+            const day = this._days.length > 0 ? zone.days(this._days[0]) : zone.days('all');
+            const timer = day.timers(0);
+            const zoneDuration = timer.d || 0;
+
+            if (zoneDuration > 0 && zoneDuration !== this.duration) {
+                customZones.push({ zoneId, duration: zoneDuration });
+            }
+        }
+        return customZones;
+    }
+
+    // Reset all zones in sequence to template duration
+    resetAllDurations() {
+        for (const zoneId of this.order) {
+            const zone = App.zones(zoneId);
+            if (!zone || !zone.defined()) continue;
+
+            // Set duration on all sequence days
+            for (const dayName of this._days) {
+                const day = zone.days(dayName);
+                const timer = day.timers(0);
+                timer.d = this.duration;
+            }
+        }
     }
 }

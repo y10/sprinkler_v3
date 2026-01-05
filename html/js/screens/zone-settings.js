@@ -97,6 +97,12 @@ select option {
   background: var(--primary-background-color);
 }
 
+.timer__time-readonly {
+  font-size: 48px;
+  color: var(--info-background-color);
+  opacity: 0.6;
+}
+
 </style>
 `;
 
@@ -109,9 +115,12 @@ const template = (self) => `${style}
   <div class="timer__ctrl">
     ${App.zones().count() > 1 ? `<input id="timer-name" class="timer__name" type="text" autocapitalize="words" value="${self.zone.name}">` : '&nbsp;'}
     <span id="timer-time" class="timer__time">
-      <select id="timer-time-hours" class="timer__time-hours"></select>
-      :
-      <select id="timer-time-minutes" class="timer__time-minutes"></select>
+      ${self.isSequenced
+        ? `<span class="timer__time-readonly">${String.format00(self.timer?.h ?? 0)}:${String.format00(self.timer?.m ?? 0)}</span>`
+        : `<select id="timer-time-hours" class="timer__time-hours"></select>
+           :
+           <select id="timer-time-minutes" class="timer__time-minutes"></select>`
+      }
       &nbsp;
       <select id="timer-time-duration" class="timer__time-duration"></select>
     </span>
@@ -136,7 +145,7 @@ export class ZoneSettings extends HTMLElement {
 
   onDurationChange(e) {
     this.timer.d = parseInt(e.srcElement.value);
-    // Note: If zone is in sequence, backend will override with sequence.duration on save
+    // Duration change will affect subsequent zones' start times on save
     this.render();
   }
 
@@ -192,23 +201,27 @@ export class ZoneSettings extends HTMLElement {
       this.TxtZone = $('#timer-name');
       this.CtlWeek = $('#week');
 
+      // Use template duration as fallback for sequenced zones without custom duration
+      const displayDuration = this.timer.d || this.templateDuration || 0;
       [0, 5, 15, 20, 30].forEach(minutes => {
-        this.DdlDuration.append(`<option ${(this.timer.d == minutes) ? "selected='selected'" : ""}>${String.format00(minutes)}</option>`)
+        this.DdlDuration.append(`<option ${(displayDuration == minutes) ? "selected='selected'" : ""}>${String.format00(minutes)}</option>`)
       });
-
-      for (let minute = 0; minute < 60; minute++) {
-        this.DdlMinutes.append(`<option ${(this.timer.m == minute) ? "selected='selected'" : ""}>${String.format00(minute)}</option>`)
-      }
-
-      for (let hour = 0; hour < 24; hour++) {
-        this.DdlHours.append(`<option ${(this.timer.h == hour) ? "selected='selected'" : ""}>${String.format00(hour)}</option>`)
-      }
 
       this.DdlDuration.on('change', this.onDurationChange.bind(this));
 
-      this.DdlMinutes.on('change', this.onMinuteChange.bind(this));
+      // Only populate time selects if not sequenced
+      if (!this.isSequenced) {
+        for (let minute = 0; minute < 60; minute++) {
+          this.DdlMinutes.append(`<option ${(this.timer.m == minute) ? "selected='selected'" : ""}>${String.format00(minute)}</option>`)
+        }
 
-      this.DdlHours.on('change', this.onHourChange.bind(this));
+        for (let hour = 0; hour < 24; hour++) {
+          this.DdlHours.append(`<option ${(this.timer.h == hour) ? "selected='selected'" : ""}>${String.format00(hour)}</option>`)
+        }
+
+        this.DdlMinutes.on('change', this.onMinuteChange.bind(this));
+        this.DdlHours.on('change', this.onHourChange.bind(this));
+      }
 
       this.TxtZone.on('change', this.onNameChange.bind(this));
 
@@ -220,6 +233,22 @@ export class ZoneSettings extends HTMLElement {
     });
   };
 
+  // Get durations for all zones in sequence (for time calculation)
+  getZoneDurations() {
+    const seq = App.sequence();
+    const durations = {};
+    for (const zoneId of seq.order) {
+      const zone = App.zones(zoneId);
+      if (!zone || !zone.defined()) continue;
+      const day = seq.days.length > 0 ? zone.days(seq.days[0]) : zone.days('all');
+      const timer = day.timers(0);
+      if (timer && timer.d > 0) {
+        durations[zoneId] = timer.d;
+      }
+    }
+    return durations;
+  }
+
   activate() {
     App.zones().current = this.zone;
 
@@ -230,10 +259,22 @@ export class ZoneSettings extends HTMLElement {
     if (this.isSequenced) {
       // Use first sequence day for display
       this.day = this.zone.days(seq.days[0]);
+      this.timer = this.day.timers(0);
+
+      // Calculate time from sequence (may differ from stored timer if not yet saved)
+      const calculatedTime = seq.getZoneStartTime(parseInt(this.zone.id), this.getZoneDurations());
+      if (calculatedTime) {
+        this.timer.h = calculatedTime.h;
+        this.timer.m = calculatedTime.m;
+      }
+
+      // Store template duration for display fallback (don't overwrite custom duration)
+      this.templateDuration = seq.duration;
+    } else {
+      this.timer = this.day.timers(0);
+      this.templateDuration = null;
     }
 
-    // Refresh timer data in case sequence builder changed it
-    this.timer = this.day.timers(0);
     this.render();
 
     // After render, set selected days on week picker if sequenced

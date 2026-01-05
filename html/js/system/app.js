@@ -142,6 +142,7 @@ class AppModel {
         if ("sequence" in json && json.sequence) {
           this.$sequence = new Sequence(json.sequence);
         }
+        spinner.close();
         return true;
       }
     } catch (error) {

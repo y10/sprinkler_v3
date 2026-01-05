@@ -39,6 +39,22 @@ const template = (self) => `
   width: 15px;
 }
 
+.duration-indicator {
+  display: none;
+  margin-left: 8px;
+  cursor: pointer;
+  font-size: 24px;
+  opacity: 0.8;
+}
+
+.duration-indicator:hover {
+  opacity: 1;
+}
+
+.duration-indicator.visible {
+  display: inline;
+}
+
 select {
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -74,6 +90,7 @@ pattern-connector {
   <select id="timer-time-minutes"></select>
   <span class="spacer"></span>
   <select id="timer-time-duration"></select>
+  <span id="duration-indicator" class="duration-indicator"></span>
 </span>
 `;
 
@@ -85,6 +102,7 @@ export class SequenceBuilder extends HTMLElement {
       this.hourSelect = $('#timer-time-hours');
       this.minuteSelect = $('#timer-time-minutes');
       this.durationSelect = $('#timer-time-duration');
+      this.durationIndicator = $('#duration-indicator');
 
       this.initSelects();
       this.loadExisting();
@@ -93,7 +111,8 @@ export class SequenceBuilder extends HTMLElement {
       this.weekPicker.on('change', (e) => this.onDaysChange(e));
       this.hourSelect.on('change', (e) => this.onTimeChange());
       this.minuteSelect.on('change', (e) => this.onTimeChange());
-      this.durationSelect.on('change', (e) => this.onTimeChange());
+      this.durationSelect.on('change', (e) => this.onDurationChange());
+      this.durationIndicator.on('click', (e) => this.onResetDurations());
     });
   }
 
@@ -149,6 +168,9 @@ export class SequenceBuilder extends HTMLElement {
             weekEl.setSelectedDays(seq.days);
           }
         }
+
+        // Check for custom durations
+        this.updateIndicator();
       });
     }
   }
@@ -188,11 +210,39 @@ export class SequenceBuilder extends HTMLElement {
 
   onTimeChange() {
     const seq = App.sequence();
-    // Store local time - toJson() adds timezone for backend conversion
     seq.startHour = parseInt(this.hourSelect.item().value);
     seq.startMinute = parseInt(this.minuteSelect.item().value);
+    this.applyToZones();
+  }
+
+  onDurationChange() {
+    const seq = App.sequence();
     seq.duration = parseInt(this.durationSelect.item().value);
     this.applyToZones();
+    this.updateIndicator();
+  }
+
+  async onResetDurations() {
+    const seq = App.sequence();
+    seq.resetAllDurations();
+    this.updateIndicator();
+
+    // Save immediately so changes take effect without restart
+    await App.save();
+  }
+
+  updateIndicator() {
+    const seq = App.sequence();
+    const indicator = this.durationIndicator.item();
+    if (indicator) {
+      if (seq.hasCustomDurations()) {
+        indicator.textContent = '⟲';
+        indicator.title = 'Some zones have custom durations. Click to reset all to template.';
+        indicator.classList.add('visible');
+      } else {
+        indicator.classList.remove('visible');
+      }
+    }
   }
 
   applyToZones() {
@@ -225,6 +275,7 @@ export class SequenceBuilder extends HTMLElement {
   activate() {
     // Called when slide becomes visible
     App.zones().current = null;
+    this.updateIndicator();
   }
 
   deactivate() {
