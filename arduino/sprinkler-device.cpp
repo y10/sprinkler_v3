@@ -142,6 +142,9 @@ SprinklerConfig SprinklerDevice::load() {
     mqtt_enabled = cfg.mqtt_enabled;
     unitLog.print("mqtt enabled: ");
     unitLog.println(mqtt_enabled ? "yes" : "no");
+    seq_config = cfg.sequence;
+    unitLog.print("sequence enabled: ");
+    unitLog.println(seq_config.enabled ? "yes" : "no");
     unitLog.print("rev: ");
     unitLog.println(cfg.version);
     version = cfg.version;
@@ -173,6 +176,7 @@ void SprinklerDevice::save(SprinklerConfig cfg) {
   strncpy(cfg.mqtt_user, mqtt_user.c_str(), 31);
   strncpy(cfg.mqtt_pass, mqtt_pass.c_str(), 63);
   cfg.mqtt_enabled = mqtt_enabled;
+  cfg.sequence = seq_config;
   cfg.version = version + 1;
   EEPROM.begin(EEPROM_SIZE);
   EEPROM.put(0, cfg);

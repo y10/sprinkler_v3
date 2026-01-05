@@ -11,6 +11,7 @@ import { Sequence } from "../models/sequence";
 class AppModel {
   $settings = {};
   $sequence = null;
+  $initialSnapshot = null;  // Track initial state for dirty checking
 
   $zones = new ZoneSet({
     // Uncoment for test
@@ -98,84 +99,6 @@ class AppModel {
     return this.$sequence;
   }
 
-  recalculateSequence() {
-    const seq = this.sequence();
-    // Only apply if we have BOTH pattern AND days
-    if (seq.order.length === 0 || seq.days.length === 0) {
-      console.log('[Sequence] Skip recalculate - incomplete:', { order: seq.order.length, days: seq.days.length });
-      return;
-    }
-
-    try {
-      console.log('[Sequence] Recalculating with order:', seq.order, 'days:', seq.days);
-
-      // Clear timers for days that were REMOVED from the sequence
-      const removedDays = seq.removedDays;
-      if (removedDays.length > 0) {
-        console.log('[Sequence] Clearing removed days:', removedDays);
-        for (const zoneId of seq.order) {
-          const zone = this.zones(zoneId);
-          if (!zone.defined()) continue;
-          for (const day of removedDays) {
-            const timer = zone.days(day).timers(0);
-            timer.h = 0;
-            timer.m = 0;
-            timer.d = 0;
-          }
-        }
-      }
-
-      // FIRST: Gather per-zone duration overrides (before clearing!)
-      const durations = {};
-      for (const zoneId of seq.order) {
-        const zone = this.zones(zoneId);
-        if (!zone.defined()) continue;
-        // Check if zone has a custom duration set
-        for (const day of seq.days) {
-          const timer = zone.days(day).timers(0);
-          if (timer.d && timer.d !== seq.duration && timer.d > 0) {
-            durations[zoneId] = timer.d;
-            break;
-          }
-        }
-      }
-      console.log('[Sequence] Duration overrides:', durations);
-
-      // Calculate schedule with per-zone durations
-      const schedule = seq.calculateSchedule(durations);
-
-      // Clear ONLY sequence days (not all weekdays) to preserve non-sequence timers
-      for (const zoneId of seq.order) {
-        const zone = this.zones(zoneId);
-        if (!zone.defined()) continue;
-        for (const day of seq.days) {
-          const timer = zone.days(day).timers(0);
-          timer.h = 0;
-          timer.m = 0;
-          timer.d = 0;
-        }
-      }
-
-      // Apply new schedules to sequence days
-      for (const day of seq.days) {
-        for (const [zoneId, times] of Object.entries(schedule)) {
-          const zone = this.zones(zoneId);
-          if (!zone.defined()) continue;
-          const timer = zone.days(day).timers(0);
-          timer.h = times.h;
-          timer.m = times.m;
-          timer.d = times.d;
-        }
-      }
-
-      // Commit the days change now that timers are updated
-      seq.commitDays();
-      console.log('[Sequence] Applied schedule:', schedule);
-    } catch (error) {
-      console.error('[Sequence] Recalculation failed:', error);
-    }
-  }
-
   async load(modules) {
     try {
       const { zones, sequence } = await this.settings();
@@ -183,12 +106,16 @@ class AppModel {
         this.$zones = new ZoneSet(zones);
       }
       if (sequence) {
+        // Use sequence from backend directly - no derivation needed
         this.$sequence = new Sequence(sequence);
-      } else if (zones && Object.keys(zones).length > 1) {
-        // Try to derive sequence from existing zone schedules
-        this.$sequence = this.deriveSequenceFromZones(zones);
-        console.log('[Sequence] Derived from zones:', this.$sequence);
+        console.log('[Sequence] Loaded from backend:', sequence);
+      } else {
+        // No sequence configured yet - start with empty
+        this.$sequence = new Sequence();
+        console.log('[Sequence] No sequence in backend, starting fresh');
       }
+      // Capture initial snapshot for dirty checking
+      this.$initialSnapshot = this.getSnapshot();
       Module.register(modules);
     } catch(error) {
       console.log(error);
@@ -197,94 +124,23 @@ class AppModel {
     }
   }
 
-  deriveSequenceFromZones(zones) {
-    console.log('[Derive] Starting with zones:', zones);
-    // Find days that have schedules across multiple zones
-    const daySchedules = {};
-    const allDays = new Set();
-
-    for (const [zoneId, zone] of Object.entries(zones)) {
-      if (!zone.days) continue;
-      for (const [day, timers] of Object.entries(zone.days)) {
-        if (day === 'all' || !timers || timers.length === 0) continue;
-        const timer = timers[0];
-        if (!timer.d || timer.d === 0) continue; // Skip if no duration
-
-        allDays.add(day);
-        if (!daySchedules[day]) daySchedules[day] = [];
-        daySchedules[day].push({
-          zoneId: parseInt(zoneId),
-          minutes: timer.h * 60 + timer.m,
-          h: timer.h,
-          m: timer.m,
-          d: timer.d
-        });
-      }
-    }
-    console.log('[Derive] daySchedules:', daySchedules, 'allDays:', Array.from(allDays));
-
-    // Find the day with most zones scheduled
-    let bestDay = null;
-    let maxZones = 0;
-    for (const [day, schedules] of Object.entries(daySchedules)) {
-      if (schedules.length > maxZones) {
-        maxZones = schedules.length;
-        bestDay = day;
-      }
-    }
-
-    console.log('[Derive] bestDay:', bestDay, 'maxZones:', maxZones);
-
-    if (!bestDay || maxZones < 1) {
-      console.log('[Derive] Cannot derive - no valid schedules found');
-      return new Sequence(); // Can't derive sequence
-    }
-
-    // Sort zones by start time
-    const sorted = daySchedules[bestDay].sort((a, b) => a.minutes - b.minutes);
-
-    // Extract sequence data
-    const order = sorted.map(s => s.zoneId);
-    const first = sorted[0];
-    const duration = first.d;
-
-    // Calculate gap from time differences
-    let gap = 5; // default
-    if (sorted.length > 1) {
-      const diff = sorted[1].minutes - sorted[0].minutes;
-      gap = diff - duration;
-      if (gap < 0) gap = 5;
-    }
-
-    // Get all days that have the same zones scheduled
-    const days = Array.from(allDays);
-
-    const result = new Sequence({
-      order,
-      startHour: Time.toLocalHour(first.h),
-      startMinute: first.m,
-      duration,
-      gap,
-      days
-    });
-    console.log('[Derive] Result:', result);
-    return result;
-  }
-
   async save() {
     const spinner = Status.wait();
     const logLevel = this.logLevel();
     const chip = this.hostname();
     const name = this.friendlyName();
     const zones = this.$zones.toJson();
-    // Note: sequence is derived from zones, not stored separately
-    const state = { logLevel, name, chip, zones };
+    const sequence = this.$sequence ? this.$sequence.toJson() : null;
+    const state = { logLevel, name, chip, zones, sequence };
     try {
       const json = await Store.put(state);
       if (json && json !== state) {
         this.$settings = { ...json };
         if ("zones" in json && Object.keys(json.zones).length > 0) {
           this.$zones = new ZoneSet(json.zones);
+        }
+        if ("sequence" in json && json.sequence) {
+          this.$sequence = new Sequence(json.sequence);
         }
         return true;
       }
@@ -332,6 +188,22 @@ class AppModel {
 
   reload() {
     window.location.reload();
+  }
+
+  getSnapshot() {
+    return JSON.stringify({
+      zones: this.$zones.toJson(),
+      sequence: this.$sequence ? this.$sequence.toJson() : null
+    });
+  }
+
+  isScheduleDirty() {
+    if (!this.$initialSnapshot) return false;
+    return this.getSnapshot() !== this.$initialSnapshot;
+  }
+
+  resetScheduleSnapshot() {
+    this.$initialSnapshot = this.getSnapshot();
   }
 }
 

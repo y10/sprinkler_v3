@@ -70,9 +70,12 @@ class SprinklerControl {
       "\", \"ssid\": \"" + wifissid() +
       "\", \"host\": \"" + Device.hostname() +
       "\", \"zones\": " + Settings.toJSON() +
+      ", \"sequence\": " + sequenceToJSON() +
       ", \"source\": \"" + Device.source() +
       "\", \"enabled\": " + isEnabled() + " }";
   }
+
+  String sequenceToJSON();
 
   bool fromJSON(JsonObject json);
 

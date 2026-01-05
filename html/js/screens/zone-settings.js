@@ -136,13 +136,7 @@ export class ZoneSettings extends HTMLElement {
 
   onDurationChange(e) {
     this.timer.d = parseInt(e.srcElement.value);
-
-    // Check if this zone is part of a sequence - trigger cascade
-    const seq = App.sequence();
-    if (seq.order.includes(parseInt(this.zone.id))) {
-      App.recalculateSequence();
-    }
-
+    // Note: If zone is in sequence, backend will override with sequence.duration on save
     this.render();
   }
 

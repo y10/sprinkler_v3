@@ -66,12 +66,15 @@ export class Sequence {
     }
 
     toJson() {
+        // Include current client timezone for UTC conversion (not stored)
+        const tz = new Date().getTimezoneOffset() / 60;
         return {
             order: this.order,
             startHour: this.startHour,
             startMinute: this.startMinute,
             duration: this.duration,
             gap: this.gap,
+            timezoneOffset: tz,  // Sent for conversion, not persisted
             days: this._days
         };
     }

@@ -176,8 +176,120 @@ bool SprinklerControl::fromJSON(JsonObject json) {
     dirty = true;
   }
 
+  if (json.containsKey("sequence")) {
+    JsonVariant seqVar = json["sequence"];
+    SprinklerSequenceConfig& seq = Device.sequence();
+
+    if (seqVar.isNull()) {
+      // Clear sequence
+      seq.enabled = false;
+      memset(seq.order, 0, sizeof(seq.order));
+      seq.days = 0;
+    } else {
+      JsonObject seqJson = seqVar.as<JsonObject>();
+
+      // Parse order array (0-terminated)
+      JsonArray orderArr = seqJson["order"].as<JsonArray>();
+      memset(seq.order, 0, sizeof(seq.order));
+      uint8_t idx = 0;
+      for (JsonVariant v : orderArr) {
+        if (idx < 6) {
+          seq.order[idx++] = v.as<uint8_t>();
+        }
+      }
+
+      // Parse days array to bitmask
+      seq.days = 0;
+      JsonArray daysArr = seqJson["days"].as<JsonArray>();
+      for (JsonVariant v : daysArr) {
+        const char* day = v.as<const char*>();
+        if (strcmp(day, "sun") == 0) seq.days |= (1 << 0);
+        else if (strcmp(day, "mon") == 0) seq.days |= (1 << 1);
+        else if (strcmp(day, "tue") == 0) seq.days |= (1 << 2);
+        else if (strcmp(day, "wed") == 0) seq.days |= (1 << 3);
+        else if (strcmp(day, "thu") == 0) seq.days |= (1 << 4);
+        else if (strcmp(day, "fri") == 0) seq.days |= (1 << 5);
+        else if (strcmp(day, "sat") == 0) seq.days |= (1 << 6);
+      }
+
+      seq.hour = seqJson["startHour"] | 6;
+      seq.minute = seqJson["startMinute"] | 0;
+      seq.duration = seqJson["duration"] | 15;
+      seq.gap = seqJson["gap"] | 5;
+      seq.enabled = (seq.orderCount() > 0 && seq.days > 0);
+    }
+    dirty = true;
+  }
+
+  // Get timezone offset for UTC conversion (sent with request, not stored)
+  int8_t timezoneOffset = 0;
+  if (json.containsKey("sequence")) {
+    JsonObject seqJson = json["sequence"].as<JsonObject>();
+    if (!seqJson.isNull() && seqJson.containsKey("timezoneOffset")) {
+      timezoneOffset = seqJson["timezoneOffset"].as<int8_t>();
+    }
+  }
+
   if (json.containsKey("zones")) {
-    Settings.fromJSON(json["zones"].as<JsonObject>());
+    JsonObject zonesJson = json["zones"].as<JsonObject>();
+    SprinklerSequenceConfig& seq = Device.sequence();
+
+    // If sequence has zones, calculate and override zone timers
+    if (seq.orderCount() > 0) {
+      const char* dayNames[] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
+
+      // Convert local time to UTC using timezone offset
+      // timezoneOffset is hours from UTC (e.g., EST = 5, so local + 5 = UTC)
+      int16_t utcMinutes = (seq.hour * 60 + seq.minute) + (timezoneOffset * 60);
+      int8_t dayShift = 0;
+      if (utcMinutes < 0) {
+        utcMinutes += 24 * 60;
+        dayShift = -1;  // Previous day in UTC
+      } else if (utcMinutes >= 24 * 60) {
+        utcMinutes -= 24 * 60;
+        dayShift = 1;   // Next day in UTC
+      }
+
+      // Calculate start time for each zone in sequence
+      uint16_t currentMinutes = utcMinutes;
+
+      for (uint8_t i = 0; i < seq.orderCount(); i++) {
+        uint8_t zoneId = seq.order[i];
+        String zoneKey = String(zoneId);
+
+        // Ensure zone exists in JSON
+        if (!zonesJson.containsKey(zoneKey)) {
+          zonesJson.createNestedObject(zoneKey);
+        }
+        JsonObject zoneObj = zonesJson[zoneKey];
+
+        // Clear existing days for this zone and set sequence days
+        JsonObject daysObj = zoneObj.createNestedObject("days");
+
+        // Calculate hour and handle additional day wraparound from zone offset
+        uint8_t timerHour = (currentMinutes / 60) % 24;
+        uint8_t timerMinute = currentMinutes % 60;
+        int8_t zoneDayOffset = currentMinutes / 60 / 24;  // Additional offset from zone position
+
+        // Set timer for each day in sequence (with day shift from timezone + zone offset)
+        for (int d = 0; d < 7; d++) {
+          if (seq.days & (1 << d)) {
+            // Apply total day offset (timezone shift + zone position wraparound)
+            int adjustedDay = (d + dayShift + zoneDayOffset + 7) % 7;
+            JsonArray dayArr = daysObj.createNestedArray(dayNames[adjustedDay]);
+            JsonObject timer = dayArr.createNestedObject();
+            timer["h"] = timerHour;
+            timer["m"] = timerMinute;
+            timer["d"] = seq.duration;
+          }
+        }
+
+        // Move to next zone's start time
+        currentMinutes += seq.duration + seq.gap;
+      }
+    }
+
+    Settings.fromJSON(zonesJson);
     save();
     dirty = false;
     attach();
@@ -188,6 +300,43 @@ bool SprinklerControl::fromJSON(JsonObject json) {
   }
 
   return true;
+}
+
+String SprinklerControl::sequenceToJSON() {
+  SprinklerSequenceConfig& seq = Device.sequence();
+  uint8_t count = seq.orderCount();
+
+  // Only return null if no zones configured - keep settings even with no days
+  if (count == 0) {
+    return "null";
+  }
+
+  String json = "{\"order\":[";
+  for (uint8_t i = 0; i < count; i++) {
+    if (i > 0) json += ",";
+    json += String(seq.order[i]);
+  }
+  json += "],\"days\":[";
+
+  // Convert bitmask to day names
+  const char* dayNames[] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
+  bool first = true;
+  for (int i = 0; i < 7; i++) {
+    if (seq.days & (1 << i)) {
+      if (!first) json += ",";
+      json += "\"";
+      json += dayNames[i];
+      json += "\"";
+      first = false;
+    }
+  }
+  json += "],\"startHour\":" + String(seq.hour);
+  json += ",\"startMinute\":" + String(seq.minute);
+  json += ",\"duration\":" + String(seq.duration);
+  json += ",\"gap\":" + String(seq.gap);
+  json += "}";
+
+  return json;
 }
 
 bool SprinklerControl::isEnabled() {

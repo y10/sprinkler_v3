@@ -1,4 +1,4 @@
-import { String, Router, Status } from "../system";
+import { String, Router, Status, Http } from "../system";
 import { jQuery } from "../system/jquery";
 import { App } from "../system/app";
 
@@ -21,6 +21,8 @@ export class Schedule extends HTMLElement {
       $(this).on("navigate-from", this.onSave.bind(this));
     });
 
+    // Take snapshot when entering schedule screen (after any initialization)
+    setTimeout(() => App.resetScheduleSnapshot(), 500);
     this.render();
   }
 
@@ -35,7 +37,16 @@ export class Schedule extends HTMLElement {
 
   async onSave(e) {
     try {
+      const isDirty = App.isScheduleDirty();
       if (await App.save()) {
+        if (isDirty) {
+          // Restart device to apply schedule changes
+          Status.wait();
+          await App.wait(2000);
+          Http.json('POST', 'esp/restart').catch();
+          await App.wait(5000);
+        }
+        App.resetScheduleSnapshot();
         Router.refresh();
       } else {
         Router.refresh();

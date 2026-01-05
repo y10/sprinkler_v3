@@ -28,6 +28,9 @@ class SprinklerDevice {
   String mqtt_pass;
   bool mqtt_enabled;
 
+  // Sequence config
+  SprinklerSequenceConfig seq_config;
+
   // [0] water source
   // [1] zone 1
   // ...
@@ -93,6 +96,9 @@ class SprinklerDevice {
 
   bool mqttEnabled() { return mqtt_enabled; }
   void mqttEnabled(bool enabled) { mqtt_enabled = enabled; }
+
+  // Sequence config accessor
+  SprinklerSequenceConfig& sequence() { return seq_config; }
 
   SprinklerConfig load();
 

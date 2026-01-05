@@ -1,6 +1,6 @@
 import { jQuery } from "../system/jquery";
 import { App } from "../system/app";
-import { String } from "../system";
+import { String, Time } from "../system";
 
 const template = (self) => `
 <style>
@@ -128,7 +128,7 @@ export class SequenceBuilder extends HTMLElement {
     const seq = App.sequence();
     console.log('[SequenceBuilder] loadExisting, seq:', seq, 'isEmpty:', seq.isEmpty);
     if (!seq.isEmpty) {
-      // Set time values immediately
+      // Set time values (stored as local time, display directly)
       this.hourSelect.item().value = seq.startHour;
       this.minuteSelect.item().value = seq.startMinute;
       this.durationSelect.item().value = seq.duration;
@@ -188,6 +188,7 @@ export class SequenceBuilder extends HTMLElement {
 
   onTimeChange() {
     const seq = App.sequence();
+    // Store local time - toJson() adds timezone for backend conversion
     seq.startHour = parseInt(this.hourSelect.item().value);
     seq.startMinute = parseInt(this.minuteSelect.item().value);
     seq.duration = parseInt(this.durationSelect.item().value);
@@ -195,11 +196,7 @@ export class SequenceBuilder extends HTMLElement {
   }
 
   applyToZones() {
-    const seq = App.sequence();
-    // Only recalculate if both pattern and days are set
-    if (seq.order.length > 0 && seq.days.length > 0) {
-      App.recalculateSequence();
-    }
+    // Sequence is updated in App.sequence() - backend calculates zone timers on save
   }
 
   // Called when navigating away - save sequence
@@ -211,6 +208,7 @@ export class SequenceBuilder extends HTMLElement {
 
     const seq = App.sequence();
     seq.order = order;
+    // Store local time - toJson() adds timezone for backend conversion
     seq.startHour = parseInt(this.hourSelect.item().value);
     seq.startMinute = parseInt(this.minuteSelect.item().value);
     seq.duration = parseInt(this.durationSelect.item().value);
@@ -221,11 +219,7 @@ export class SequenceBuilder extends HTMLElement {
       seq.days = Array.from(weekEl.selectedDays);
     }
 
-    // Only apply if days are selected
-    if (seq.days.length === 0) return;
-
-    // Apply to zones
-    App.recalculateSequence();
+    // Backend calculates zone timers when App.save() is called
   }
 
   activate() {
