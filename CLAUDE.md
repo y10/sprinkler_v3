@@ -172,7 +172,7 @@ These values are injected into:
 
 - **Maximum zones**: 6 (hardware limitation)
 - **Maximum timers per day per zone**: 2 (configurable in settings.json)
-- **Time limit per session**: 15 minutes max
+- **Time limit per session**: 30 minutes max
 - **EEPROM size**: 4096 bytes
 - **Web server port**: 80 (hardcoded)
 - **WebSocket path**: /ws
@@ -193,6 +193,19 @@ These values are injected into:
 - npm:esbuild - JavaScript bundling (via Deno's npm compatibility)
 - npm:html-minifier-terser - HTML minification
 - Built-in CompressionStream - Gzip compression
+
+## IDE Keyboard Shortcuts (Cursor/VS Code)
+
+These shortcuts are defined in the user-level `keybindings.json` and map to tasks in `.vscode/tasks.json`:
+
+| Shortcut | Task | Description |
+|---|---|---|
+| `Ctrl+Shift+T` | Prebuild HTML (Dev) | Build web UI in dev mode |
+| `Ctrl+Shift+C` | Compile ESP32 | Build HTML + compile firmware |
+| `Ctrl+Shift+U` | Upload OTA | Upload firmware to device (prompts for IP) |
+| `Ctrl+Shift+I` | Publish OTA | Full deploy: build + compile + upload |
+
+Default device IP: `192.168.0.120`
 
 ## Development Notes
 
