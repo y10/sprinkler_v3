@@ -108,6 +108,12 @@ class SprinklerControl {
 
   void scheduled(unsigned int zone, unsigned int duration);
 
+  // Sequence detection helpers
+  bool isInSequenceWindow();
+  bool isZoneInSequence(uint8_t zone);
+  uint8_t getZoneSequenceIndex(uint8_t zone);
+  void startSequenceSession(uint8_t zoneIndex);
+
  private:
   std::map<const char *, std::vector<OnEvent>> onEventHandlers;
 };

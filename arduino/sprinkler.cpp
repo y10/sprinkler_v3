@@ -39,10 +39,72 @@ void SprinklerControl::on(const char *eventType, OnEvent event) {
   onEventHandlers[eventType].push_back(event);
 }
 
+bool SprinklerControl::isZoneInSequence(uint8_t zone) {
+  auto& seq = Device.sequence();
+  for (uint8_t i = 0; i < seq.orderCount(); i++) {
+    if (seq.order[i] == zone) return true;
+  }
+  return false;
+}
+
+uint8_t SprinklerControl::getZoneSequenceIndex(uint8_t zone) {
+  auto& seq = Device.sequence();
+  for (uint8_t i = 0; i < seq.orderCount(); i++) {
+    if (seq.order[i] == zone) return i;
+  }
+  return 255; // Not found
+}
+
+bool SprinklerControl::isInSequenceWindow() {
+  auto& seq = Device.sequence();
+  if (!seq.enabled || seq.orderCount() == 0) return false;
+
+  // Get current time
+  time_t now = time(nullptr);
+  struct tm* timeinfo = localtime(&now);
+  int currentDayBit = 1 << timeinfo->tm_wday; // 0=Sun, 1=Mon, etc.
+
+  // Check if today is a sequence day
+  if (!(seq.days & currentDayBit)) return false;
+
+  // Check if current time is close to sequence start (within reasonable window)
+  int currentMinutes = timeinfo->tm_hour * 60 + timeinfo->tm_min;
+  int seqStartMinutes = seq.hour * 60 + seq.minute;
+
+  // Allow 60 minute window after start time for sequence detection
+  return currentMinutes >= seqStartMinutes && currentMinutes <= seqStartMinutes + 60;
+}
+
+void SprinklerControl::startSequenceSession(uint8_t zoneIndex) {
+  auto& session = Timers.Sequence;
+  auto& seq = Device.sequence();
+
+  session.active = true;
+  session.paused = false;
+  session.currentZoneIndex = zoneIndex;
+  session.totalZones = seq.orderCount();
+
+  console.println("Sequence session started, zone index: " + String(zoneIndex));
+}
+
 void SprinklerControl::scheduled(unsigned int zone, unsigned int duration = 0) {
   if (Timers.isEnabled())
   {
     console.println("Scheduled timer " + (String)zone);
+
+    // Check if this is part of a sequence
+    if (isZoneInSequence(zone) && isInSequenceWindow()) {
+      uint8_t zoneIndex = getZoneSequenceIndex(zone);
+
+      if (!Timers.Sequence.active) {
+        // First zone of sequence - start session
+        startSequenceSession(zoneIndex);
+      } else {
+        // Subsequent zone - advance session
+        Timers.Sequence.currentZoneIndex = zoneIndex;
+      }
+    }
+
     start(zone, duration);
   }
   else

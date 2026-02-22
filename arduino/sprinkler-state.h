@@ -71,9 +71,36 @@ class SprinklerZoneTimer {
   volatile bool stopping;  // Prevents callback execution during/after deletion
 };
 
+struct SequenceSession {
+  bool active;                      // Is sequence currently running?
+  bool paused;                      // Is sequence paused?
+  uint8_t currentZoneIndex;         // Current position in order[] (0-based)
+  uint8_t totalZones;               // Total zones in sequence
+
+  SequenceSession() : active(false), paused(false),
+    currentZoneIndex(0), totalZones(0) {}
+
+  void reset() {
+    active = false;
+    paused = false;
+    currentZoneIndex = 0;
+    totalZones = 0;
+  }
+
+  const String toJSON() const {
+    if (!active) return "null";
+    return "{ \"active\": true"
+           ", \"paused\": " + String(paused ? "true" : "false") +
+           ", \"currentIndex\": " + String(currentZoneIndex) +
+           ", \"totalZones\": " + String(totalZones) +
+           " }";
+  }
+};
+
 class SprinklerState {
  public:
   std::map<unsigned int, SprinklerZoneTimer*> Timers;
+  SequenceSession Sequence;
 
   bool isEnabled();
   void enable();
