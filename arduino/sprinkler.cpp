@@ -3,6 +3,9 @@
 #include <esp_wifi.h>
 #include "sprinkler.h"
 
+QueueHandle_t sprinklerCommandQueue = NULL;
+SemaphoreHandle_t sprinklerStateMutex = NULL;
+
 WsConsole console("unit");
 
 const String SprinklerControl::wifissid(bool persisted) {
@@ -97,15 +100,13 @@ void SprinklerControl::scheduled(unsigned int zone, unsigned int duration = 0) {
       uint8_t zoneIndex = getZoneSequenceIndex(zone);
 
       if (!Timers.Sequence.active) {
-        // First zone of sequence - start session
         startSequenceSession(zoneIndex);
       } else {
-        // Subsequent zone - advance session
         Timers.Sequence.currentZoneIndex = zoneIndex;
       }
     }
 
-    start(zone, duration);
+    requestStart(zone, duration);
   }
   else
   {
@@ -113,6 +114,36 @@ void SprinklerControl::scheduled(unsigned int zone, unsigned int duration = 0) {
   }
 }
 
+// Async API — enqueue commands for thread-safe execution from any context
+void SprinklerControl::requestStart(unsigned int zone, unsigned int duration = 0) {
+  enqueue(CMD_START, zone, duration);
+}
+
+void SprinklerControl::requestStop(unsigned int zone) {
+  enqueue(CMD_STOP, zone);
+}
+
+void SprinklerControl::requestStop() {
+  enqueue(CMD_STOP_ALL);
+}
+
+void SprinklerControl::requestPause(unsigned int zone) {
+  enqueue(CMD_PAUSE, zone);
+}
+
+void SprinklerControl::requestResume(unsigned int zone) {
+  enqueue(CMD_RESUME, zone);
+}
+
+void SprinklerControl::requestEnable() {
+  enqueue(CMD_ENABLE);
+}
+
+void SprinklerControl::requestDisable() {
+  enqueue(CMD_DISABLE);
+}
+
+// Sync API — direct execution
 void SprinklerControl::start(unsigned int zone, unsigned int duration = 0) {
   console.println("Starting timer " + (String)zone);
 
@@ -120,7 +151,7 @@ void SprinklerControl::start(unsigned int zone, unsigned int duration = 0) {
   Device.turnOn();      // engine last
   Device.blink(0.5);
 
-  Timers.start(zone, duration, [this, zone] { stop(zone); });
+  Timers.start(zone, duration);
   fireEvent("state", Timers.toJSON(zone));
 }
 
@@ -128,7 +159,7 @@ void SprinklerControl::stop(unsigned int zone) {
   console.println("Stopping timer " + (String)zone);
   if (Timers.isWatering(zone)) {
     if (Timers.count() == 1) {
-      Device.turnOff(); 
+      Device.turnOff();
       Device.blink(0);
     }
     Device.turnOff(zone);  // zone last
@@ -139,10 +170,10 @@ void SprinklerControl::stop(unsigned int zone) {
 
 void SprinklerControl::stop() {
   console.println("Stopping all");
-  Device.turnOff(); 
+  Device.turnOff();
   Device.blink(0);
   for (size_t zone = 1; zone <= 6; zone++) {
-    Device.turnOff(zone); 
+    Device.turnOff(zone);
   }
 }
 
@@ -467,4 +498,29 @@ void SprinklerControl::restart() {
   Device.restart();
 }
 
+void SprinklerControl::processCommands() {
+  ZoneCommand cmd;
+  while (xQueueReceive(sprinklerCommandQueue, &cmd, 0) == pdTRUE) {
+    xSemaphoreTake(sprinklerStateMutex, portMAX_DELAY);
+    switch (cmd.action) {
+      case CMD_START:    start(cmd.zone, cmd.duration); break;
+      case CMD_STOP:     stop(cmd.zone); break;
+      case CMD_PAUSE:    pause(cmd.zone); break;
+      case CMD_RESUME:   resume(cmd.zone); break;
+      case CMD_STOP_ALL: stop(); break;
+      case CMD_ENABLE:   enable(); break;
+      case CMD_DISABLE:  disable(); break;
+    }
+    xSemaphoreGive(sprinklerStateMutex);
+  }
+}
+
 SprinklerControl Sprinkler = SprinklerControl();
+
+void setupCommands() {
+  Sprinkler.initCommandQueue();
+}
+
+void handleCommands() {
+  Sprinkler.processCommands();
+}

@@ -80,6 +80,12 @@ const template = (self) => `
     outline:0;
   }
 
+  .checkbox-icon.pending {
+    opacity: 0.5;
+    transform: scale(0.92);
+    transition: none;
+  }
+
 </style>
 <div class="checkbox">
     <label class="checkbox-wrapper">
@@ -113,6 +119,28 @@ export class Checkbox extends HTMLElement {
 
   disconnectedCallback() {
     this.jQuery().detach();
+  }
+
+  get pending() {
+    return !!this._pending;
+  }
+
+  set pending(value) {
+    this._pending = !!value;
+    if (this.iconEl) {
+      if (value) {
+        this._pendingTime = Date.now();
+        this.iconEl.addClass('pending');
+      } else {
+        const elapsed = Date.now() - (this._pendingTime || 0);
+        const minMs = 300;
+        if (elapsed < minMs) {
+          setTimeout(() => this.iconEl.removeClass('pending'), minMs - elapsed);
+        } else {
+          this.iconEl.removeClass('pending');
+        }
+      }
+    }
   }
 
   get disabled() {

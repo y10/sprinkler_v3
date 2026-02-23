@@ -4,19 +4,45 @@
 #include <ArduinoJson.h>
 #include <Ticker.h>
 
+#include <atomic>
 #include <functional>
 #include <map>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
+
+// Command queue for thread-safe state mutations
+enum ZoneAction : uint8_t {
+  CMD_START = 1,
+  CMD_STOP = 2,
+  CMD_PAUSE = 3,
+  CMD_RESUME = 4,
+  CMD_STOP_ALL = 5,
+  CMD_ENABLE = 6,
+  CMD_DISABLE = 7
+};
+
+struct ZoneCommand {
+  ZoneAction action;
+  uint8_t zone;
+  uint8_t duration;
+};
+
+extern QueueHandle_t sprinklerCommandQueue;
+extern SemaphoreHandle_t sprinklerStateMutex;
+
 class SprinklerZoneTimer {
  public:
-  typedef std::function<void()> OnStopCallback;
-
-  SprinklerZoneTimer(unsigned int zone, unsigned int duration, OnStopCallback onStop)
-      : Zone(zone), Duration(duration), StartTime(millis()), PauseTime(0), OnStop(onStop), stopping(false) {
+  SprinklerZoneTimer(unsigned int zone, unsigned int duration)
+      : Zone(zone), Duration(duration), StartTime(millis()), PauseTime(0), stopping(false) {
     unsigned long d = (duration ? duration : 5);
     unsigned long ms = d * 1000 * 60;
     timer.once_ms(ms, +[](SprinklerZoneTimer* x) {
-      if (!x->stopping) x->OnStop();
+      if (!x->stopping.load()) {
+        ZoneCommand cmd = { CMD_STOP, (uint8_t)x->Zone, 0 };
+        xQueueSend(sprinklerCommandQueue, &cmd, 0);
+      }
     }, this);
   }
 
@@ -26,7 +52,7 @@ class SprinklerZoneTimer {
   unsigned long PauseTime;
 
   ~SprinklerZoneTimer() {
-    stopping = true;  // Set BEFORE detach to prevent callback execution
+    stopping.store(true);
     timer.detach();
   }
 
@@ -42,15 +68,19 @@ class SprinklerZoneTimer {
     uint32_t d = (uint32_t)Duration * 60 * 1000;
     uint32_t p = PauseTime - StartTime;
     uint32_t ms = d - p;
+    stopping.store(false);
     timer.once_ms(ms, +[](SprinklerZoneTimer* x) {
-      if (!x->stopping) x->OnStop();
+      if (!x->stopping.load()) {
+        ZoneCommand cmd = { CMD_STOP, (uint8_t)x->Zone, 0 };
+        xQueueSend(sprinklerCommandQueue, &cmd, 0);
+      }
     }, this);
     StartTime = millis() - p;
     PauseTime = 0;
   }
 
   void stop() {
-    stopping = true;  // Also set here for explicit stop
+    stopping.store(true);
     PauseTime = 0;
     timer.detach();
   }
@@ -66,9 +96,8 @@ class SprinklerZoneTimer {
   }
 
  private:
-  OnStopCallback OnStop;
   Ticker timer;
-  volatile bool stopping;  // Prevents callback execution during/after deletion
+  std::atomic<bool> stopping;
 };
 
 struct SequenceSession {
@@ -111,8 +140,7 @@ class SprinklerState {
   bool isWatering();
   size_t count();
 
-  typedef std::function<void()> OnStopCallback;
-  void start(unsigned int zone, unsigned int duration, OnStopCallback onStop);
+  void start(unsigned int zone, unsigned int duration);
   void stop(unsigned int zone);
   void pause(unsigned int zone);
   void resume(unsigned int zone);

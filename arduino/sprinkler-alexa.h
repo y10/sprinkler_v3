@@ -104,20 +104,19 @@ void setupAlexa() {
         // Turn on all configured zones
         Sprinkler.Settings.forEachZone([](unsigned int zId, SprinklerZone* zone) {
           if (zone->name().length() > 0) {
-            Sprinkler.start(zId, SKETCH_TIMER_DEFAULT_LIMIT);
+            Sprinkler.requestStart(zId, SKETCH_TIMER_DEFAULT_LIMIT);
           }
         });
       } else {
-        // Stop all zones
-        Sprinkler.stop();
+        Sprinkler.requestStop();
       }
     } else {
       // Zone device: start/stop watering
       alexa_console.printf("Set: %s (zone=%d) -> %s\n", device_name, zoneId, state ? "ON" : "OFF");
       if (state) {
-        Sprinkler.start(zoneId, SKETCH_TIMER_DEFAULT_LIMIT);
+        Sprinkler.requestStart(zoneId, SKETCH_TIMER_DEFAULT_LIMIT);
       } else {
-        Sprinkler.stop(zoneId);
+        Sprinkler.requestStop(zoneId);
       }
     }
   });
@@ -134,12 +133,12 @@ void setupAlexa() {
 
     if (zoneId == ALEXA_SYSTEM_DEVICE) {
       // All zones device: report if any zone is watering
-      state = Sprinkler.isWatering();
+      state = Sprinkler.safeIsWatering();
       value = state ? 255 : 0;
       alexa_console.printf("Get: %s (ALL) -> %s\n", device_name, state ? "ON" : "OFF");
     } else {
       // Zone device: report if zone is watering
-      state = Sprinkler.Timers.isWatering(zoneId);
+      state = Sprinkler.safeIsWatering(zoneId);
       value = state ? 255 : 0;
       alexa_console.printf("Get: %s (zone=%d) -> %s\n", device_name, zoneId, state ? "ON" : "OFF");
     }

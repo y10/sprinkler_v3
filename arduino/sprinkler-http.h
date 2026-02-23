@@ -22,7 +22,7 @@ AsyncWebServer http(80);
 AsyncWebSocket ws("/ws");
 
 void ok(AsyncWebServerRequest *request) {
-  request->send(200);
+  request->send(200, "application/json", "{\"ok\":true}");
 }
 
 void ok(AsyncWebServerRequest *request, const String text) {
@@ -63,7 +63,7 @@ void setupHttp() {
   http.on("/js/setup.js", [&](AsyncWebServerRequest *rqt) { gzip(rqt, "application/javascript", SKETCH_SETUP_JS_GZ, sizeof(SKETCH_SETUP_JS_GZ)); });
 
   http.on("/api/state", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
-    json(request, Sprinkler.Timers.toJSON());
+    json(request, Sprinkler.safeStateJSON());
   });
 
   http.on("/api/zone/{}/state", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
@@ -72,7 +72,7 @@ void setupHttp() {
       request->send(400, "application/json", "{\"error\":\"Invalid zone\"}");
       return;
     }
-    json(request, Sprinkler.Timers.toJSON(rel));
+    json(request, Sprinkler.safeStateJSON(rel));
   });
 
   http.on("/api/zone/{}/start", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
@@ -82,13 +82,12 @@ void setupHttp() {
       return;
     }
     uint8_t dur = request->hasArg("d") ? request->arg("d").toInt() : 5;
-    // Enforce duration limit
     if (dur > SKETCH_TIMER_DEFAULT_LIMIT) {
       dur = SKETCH_TIMER_DEFAULT_LIMIT;
     }
     console.println("GET: /api/zone/" + (String)rel + "/start?d=" + (String)dur);
-    Sprinkler.start(rel, dur);
-    json(request, Sprinkler.Timers.toJSON(rel));
+    Sprinkler.requestStart(rel, dur);
+    ok(request);
   });
   http.on("/api/zone/{}/stop", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
     uint8_t rel = request->pathArg(0).toInt();
@@ -96,8 +95,8 @@ void setupHttp() {
       request->send(400, "application/json", "{\"error\":\"Invalid zone\"}");
       return;
     }
-    Sprinkler.stop(rel);
-    json(request, Sprinkler.Timers.toJSON(rel));
+    Sprinkler.requestStop(rel);
+    ok(request);
   });
   http.on("/api/zone/{}/pause", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
     uint8_t rel = request->pathArg(0).toInt();
@@ -105,8 +104,8 @@ void setupHttp() {
       request->send(400, "application/json", "{\"error\":\"Invalid zone\"}");
       return;
     }
-    Sprinkler.pause(rel);
-    json(request, Sprinkler.Timers.toJSON(rel));
+    Sprinkler.requestPause(rel);
+    ok(request);
   });
   http.on("/api/zone/{}/resume", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
     uint8_t rel = request->pathArg(0).toInt();
@@ -114,8 +113,8 @@ void setupHttp() {
       request->send(400, "application/json", "{\"error\":\"Invalid zone\"}");
       return;
     }
-    Sprinkler.resume(rel);
-    json(request, Sprinkler.Timers.toJSON(rel));
+    Sprinkler.requestResume(rel);
+    ok(request);
   });
 
   http.on("/api/relay/{}/{}", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
@@ -164,11 +163,11 @@ void setupHttp() {
     String command = request->pathArg(0);
     console.println("POST: /api/schedule/" + command);
     if (command == "enable") {
-      Sprinkler.enable();
+      Sprinkler.requestEnable();
+    } else {
+      Sprinkler.requestDisable();
     }
-    else {
-      Sprinkler.disable();
-    }
+    // Return current state (may be stale by one loop cycle — acceptable)
     json(request, (String) "{ \"state\": \"" + String(Sprinkler.isEnabled() ? "enabled" : "disabled") + "\" }");
   });
   

@@ -123,14 +123,15 @@ export class ZoneList extends HTMLElement {
     Router.navigate('zone', { popup: true, params:{'zone-id': zoneid} });
   }
 
-  onZoneChecking(e) 
+  onZoneChecking(e)
   {
-    e.preventDefault(); 
+    e.preventDefault();
     this.onZoneCheck(e);
   }
 
-  async onZoneCheck(e) {
+  onZoneCheck(e) {
     const checkbox = e.srcElement;
+    if (checkbox.pending) return;
     const checked = !checkbox.checked;
     const command = checked
       ? checkbox.style.color
@@ -138,14 +139,11 @@ export class ZoneList extends HTMLElement {
         : "start"
       : "stop";
     const zoneid = checkbox.getAttribute("zone-id");
-    checkbox.disabled = true;
-    try {
-      const timer = await Http.json("GET", `api/zone/${zoneid}/${command}`);
-      this.update(timer);
-    } catch (error) {
-      console.error(error);
-    }
-    checkbox.disabled = false;
+    checkbox.pending = true;
+    Http.json("GET", `api/zone/${zoneid}/${command}`).catch(err => {
+      console.error(err);
+      checkbox.pending = false;
+    });
   }
 
   activate() {
@@ -191,6 +189,7 @@ export class ZoneList extends HTMLElement {
     if (zone) {
       this.jQuery(`.container sketch-checkbox:nth-child(${zone})`).forEach(
         (e, i) => {
+          e.pending = false;
           if (state == "paused") {
             delete this.activeTimers[zone];
             e.style.color = "var(--warn-background-color)";

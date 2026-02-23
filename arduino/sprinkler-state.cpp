@@ -74,13 +74,13 @@ const String SprinklerState::toJSON(unsigned int zone)
   return "{ \"state\": \"stopped\", \"zone\":" + (String)zone + "}";
 }
 
-void SprinklerState::start(unsigned int zone, unsigned int duration, OnStopCallback onStop) {
+void SprinklerState::start(unsigned int zone, unsigned int duration) {
   if (Timers.find(zone) != Timers.end()) {
     delete Timers[zone];
     Timers.erase(zone);
   }
 
-  SprinklerZoneTimer *timer = new SprinklerZoneTimer(zone, duration, onStop);
+  SprinklerZoneTimer *timer = new SprinklerZoneTimer(zone, duration);
   if (timer != nullptr) {
     Timers[zone] = timer;
   }

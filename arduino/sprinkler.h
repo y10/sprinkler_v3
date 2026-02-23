@@ -81,6 +81,52 @@ class SprinklerControl {
 
   bool isWatering() { return Timers.isWatering(); }
 
+  void initCommandQueue() {
+    sprinklerCommandQueue = xQueueCreate(16, sizeof(ZoneCommand));
+    sprinklerStateMutex = xSemaphoreCreateMutex();
+  }
+
+  void processCommands();
+
+  // Thread-safe state reads (for async_tcp context)
+  String safeStateJSON() {
+    xSemaphoreTake(sprinklerStateMutex, portMAX_DELAY);
+    String result = Timers.toJSON();
+    xSemaphoreGive(sprinklerStateMutex);
+    return result;
+  }
+
+  String safeStateJSON(unsigned int zone) {
+    xSemaphoreTake(sprinklerStateMutex, portMAX_DELAY);
+    String result = Timers.toJSON(zone);
+    xSemaphoreGive(sprinklerStateMutex);
+    return result;
+  }
+
+  bool safeIsWatering() {
+    xSemaphoreTake(sprinklerStateMutex, portMAX_DELAY);
+    bool result = Timers.isWatering();
+    xSemaphoreGive(sprinklerStateMutex);
+    return result;
+  }
+
+  bool safeIsWatering(unsigned int zone) {
+    xSemaphoreTake(sprinklerStateMutex, portMAX_DELAY);
+    bool result = Timers.isWatering(zone);
+    xSemaphoreGive(sprinklerStateMutex);
+    return result;
+  }
+
+  // Async API — enqueues commands for thread-safe execution from any context
+  void requestStart(unsigned int zone, unsigned int duration);
+  void requestStop(unsigned int zone);
+  void requestStop();
+  void requestPause(unsigned int zone);
+  void requestResume(unsigned int zone);
+  void requestEnable();
+  void requestDisable();
+
+  // Sync API — direct execution (called by processCommands under mutex)
   void start(unsigned int zone, unsigned int duration);
   void stop(unsigned int zone);
   void stop();
@@ -116,7 +162,16 @@ class SprinklerControl {
 
  private:
   std::map<const char *, std::vector<OnEvent>> onEventHandlers;
+
+  void enqueue(ZoneAction action, uint8_t zone = 0, uint8_t duration = 0) {
+    ZoneCommand cmd = { action, zone, duration };
+    xQueueSend(sprinklerCommandQueue, &cmd, 0);
+  }
 };
 
 extern SprinklerControl Sprinkler;
+
+void setupCommands();
+void handleCommands();
+
 #endif

@@ -20,6 +20,8 @@ void begin() {
 void setup() {
   begin();
 
+  setupCommands();
+
   setupUnit();
   setupWifi();
   setupDhcp();
@@ -38,6 +40,7 @@ void loop() {
   handleAlexa();
   handleMqtt();
   handleTicks();
+  handleCommands();
 }
 
 void tick() {
