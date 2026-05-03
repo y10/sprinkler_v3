@@ -106,6 +106,12 @@ void SprinklerDevice::init()
 {
    pinMode(LED_PIN, OUTPUT);
 
+   // Initialize both source pins so the inactive one never floats
+   pinMode(ENG_PIN, OUTPUT);
+   digitalWrite(ENG_PIN, HIGH);
+   pinMode(UTL_PIN, OUTPUT);
+   digitalWrite(UTL_PIN, HIGH);
+
    for(const uint8_t &pin : pins)
    {
       pinMode(pin, OUTPUT);
@@ -206,7 +212,7 @@ uint8_t SprinklerDevice::toggle(uint8_t relay) {
 }
 
 uint8_t SprinklerDevice::turnOn(uint8_t relay) {
-  if (relay < sizeof(pins) && !bitRead(relays, relay)) {
+  if (relay < sizeof(pins)) {
     digitalWrite(pins[relay], LOW);
     bitWrite(relays, relay, 1);
 
@@ -217,7 +223,7 @@ uint8_t SprinklerDevice::turnOn(uint8_t relay) {
 }
 
 uint8_t SprinklerDevice::turnOff(uint8_t relay) {
-  if (relay < sizeof(pins) && bitRead(relays, relay)) {
+  if (relay < sizeof(pins)) {
     digitalWrite(pins[relay], HIGH);
     bitWrite(relays, relay, 0);
 

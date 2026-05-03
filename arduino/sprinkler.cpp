@@ -174,7 +174,10 @@ void SprinklerControl::stop() {
   Device.blink(0);
   for (size_t zone = 1; zone <= 6; zone++) {
     Device.turnOff(zone);
+    Timers.stop(zone);
   }
+  Timers.Sequence.reset();
+  fireEvent("state", Timers.toJSON());
 }
 
 void SprinklerControl::pause(unsigned int zone) {
