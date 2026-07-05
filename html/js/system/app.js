@@ -7,10 +7,12 @@ import { Store } from "../storage";
 import { Zone } from "../models/zone";
 import { ZoneSet } from "../models/zoneSet";
 import { Sequence } from "../models/sequence";
+import { Chain } from "../models/chain";
 
 class AppModel {
   $settings = {};
   $sequence = null;
+  $chain = null;            // ephemeral ad-hoc run chain (landing page)
   $initialSnapshot = null;  // Track initial state for dirty checking
 
   $zones = new ZoneSet({
@@ -97,6 +99,16 @@ class AppModel {
       this.$sequence = new Sequence(this.$settings.sequence || {});
     }
     return this.$sequence;
+  }
+
+  /**
+   * @returns {Chain}
+   */
+  chain() {
+    if (!this.$chain) {
+      this.$chain = new Chain();
+    }
+    return this.$chain;
   }
 
   async load(modules) {

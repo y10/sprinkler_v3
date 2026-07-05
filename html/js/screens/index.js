@@ -25,10 +25,29 @@ export class Index extends HTMLElement {
             $(document).on('notification', this.onNotification.bind(this));
             this.render();
         });
+
+        // Bind the chain listener ONCE (render() re-runs on 'refresh' — binding there would stack duplicates).
+        if (!this._onChainChange) {
+            this._onChainChange = () => this._syncToggleToChain();
+            App.chain().addEventListener('change', this._onChainChange);
+        }
     }
 
     disconnectedCallback() {
+        if (this._onChainChange) {
+            App.chain().removeEventListener('change', this._onChainChange);
+            this._onChainChange = null;
+        }
         this.jQuery().detach();
+    }
+
+    // On the landing page, morph the hamburger to X while the chain has zones.
+    _syncToggleToChain() {
+        const onMain = this.$Outlet?.item()?.lastElement?.tagName === 'SPRINKLER-MAIN';
+        if (!onMain) return;
+        const toggle = this.$Toggle?.item();
+        if (!toggle) return;
+        App.chain().hasItems() ? toggle.open() : toggle.close();
     }
 
     onEscape(e) {
@@ -40,6 +59,12 @@ export class Index extends HTMLElement {
     };
     
     onToggle(e) {
+        // On the landing page with a chain present, the X clears the chain (accepted overload).
+        const onMain = this.$Outlet?.item()?.lastElement?.tagName === 'SPRINKLER-MAIN';
+        if (onMain && App.chain().hasItems()) {
+            App.chain().clear();
+            return;
+        }
         this.$Toggle.item().opened ? this.close() : this.open();
     }
 
@@ -77,11 +102,20 @@ export class Index extends HTMLElement {
 
     onNavigateTo(e) {
         this.$Toggle.item().open();
+
+        // Clear an idle chain when navigating away from the landing page to a real screen
+        // (schedule/settings/etc.). "menu" and "zone" are overlays on main and must preserve it.
+        const to = e.detail && e.detail.to;
+        const chain = App.chain();
+        if (to && to != "main" && to != "menu" && to != "zone" && chain.hasItems() && !chain.isActive()) {
+            chain.clear();
+        }
     }
 
     onNavigateFrom(e) {
         if (e.detail.to == "main") {
-            this.$Toggle.item().close();
+            // Returning to the landing page: keep the X if a chain still has items, else hamburger.
+            this._syncToggleToChain();
         }
         else if (e.detail.to == "menu") {
         }

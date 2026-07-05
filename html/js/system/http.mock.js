@@ -20,6 +20,63 @@ const MOCK_SETTINGS = {
 // Runtime state for active watering sessions
 const zoneState = {};
 
+// Runtime state for the ad-hoc chain (mock of the firmware SequenceSession).
+const mockChain = {
+    order: [],
+    durations: {},   // { zoneId: minutes }
+    gap: 5,
+    active: false,
+    inGap: false,
+    currentIndex: 0
+};
+
+function mockChainState() {
+    if (!mockChain.active) return null;
+    return {
+        active: true,
+        adhoc: true,
+        paused: false,
+        currentIndex: mockChain.currentIndex,
+        totalZones: mockChain.order.length,
+        gap: mockChain.gap,
+        inGap: mockChain.inGap,
+        order: [...mockChain.order],
+        durations: mockChain.order.map((z) => mockChain.durations[z] ?? 15)
+    };
+}
+
+function chainStart(body) {
+    mockChain.order = (body.order || []).map((z) => parseInt(z));
+    mockChain.durations = {};
+    mockChain.order.forEach((z) => {
+        mockChain.durations[z] = (body.durations && body.durations[z]) || 15;
+    });
+    mockChain.gap = body.gap ?? 5;
+    mockChain.active = true;
+    mockChain.inGap = false;
+    mockChain.currentIndex = 0;
+    return { ok: true };
+}
+
+function chainUpdate(body) {
+    if (!mockChain.active) return { ok: true };
+    const tail = (body.order || []).map((z) => parseInt(z));
+    if (tail.length === 0 || tail[0] !== mockChain.order[mockChain.currentIndex]) return { ok: true };
+    const head = mockChain.order.slice(0, mockChain.currentIndex);
+    mockChain.order = [...head, ...tail].slice(0, 6);  // match firmware's 6-zone clamp
+    tail.forEach((z) => {
+        mockChain.durations[z] = (body.durations && body.durations[z]) || mockChain.durations[z] || 15;
+    });
+    return { ok: true };
+}
+
+function chainStop() {
+    mockChain.active = false;
+    mockChain.inGap = false;
+    mockChain.currentIndex = 0;
+    return { ok: true };
+}
+
 function getEmptyTimers() {
     return MOCK_ZONES.map((z, i) => ({
         h: 0, m: 0, d: 0
@@ -142,8 +199,14 @@ function parseUrl(url) {
     return { path, params };
 }
 
-function routeRequest(method, url) {
+function routeRequest(method, url, body) {
     const { path, params } = parseUrl(url);
+
+    // Ad-hoc chain endpoints
+    if (path === '/api/chain/start') return chainStart(body || {});
+    if (path === '/api/chain/update') return chainUpdate(body || {});
+    if (path === '/api/chain/stop') return chainStop();
+    if (path === '/api/chain/state') return mockChainState();
 
     // Zone control endpoints
     const zoneMatch = path.match(/\/api\/zone\/(\d+)\/(\w+)/);
@@ -220,12 +283,12 @@ function timeout(options, defaultValue) {
     return options ? options["timeout"] || defaultValue : defaultValue;
 }
 
-function send(method, service, options) {
+function send(method, service, options, body) {
     return new Promise((done, error) => {
-        console.log(`[MOCK] ${method}: ${service}`);
+        console.log(`[MOCK] ${method}: ${service}`, body ?? "");
         setTimeout(() => {
             try {
-                const result = routeRequest(method, service);
+                const result = routeRequest(method, service, body);
                 console.log(`[MOCK] Response:`, result);
                 done(result);
             } catch (e) {
@@ -249,7 +312,7 @@ export class Http {
     }
 
     static postJson(service, params, options) {
-        return send("POST", service, options);
+        return send("POST", service, options, params);
     }
 
     static postForm(service, data, options) {
@@ -266,7 +329,7 @@ export class Http {
     }
 
     static async json(method, service, params, options) {
-        return send(method, service, options);
+        return send(method, service, options, method.toUpperCase() === "GET" ? undefined : params);
     }
 
     static import(file) {

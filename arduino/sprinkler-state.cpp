@@ -4,6 +4,10 @@
 
 #include "includes/Files.h"
 
+// Set in setupCommands() to &Sprinkler.Timers.Sequence so the Ticker callbacks in
+// sprinkler-state.h can read the live sequence without a circular include.
+SequenceSession* sprinklerActiveSequence = nullptr;
+
 size_t SprinklerState::count() {
   size_t count = 0;
   for (const auto &kv : Timers) {

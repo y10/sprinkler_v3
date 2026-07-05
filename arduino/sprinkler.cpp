@@ -82,6 +82,9 @@ void SprinklerControl::startSequenceSession(uint8_t zoneIndex) {
   auto& session = Timers.Sequence;
   auto& seq = Device.sequence();
 
+  // B8: don't let a scheduled sequence hijack an in-progress ad-hoc chain (they share Sequence).
+  if (session.adhoc) return;
+
   session.active = true;
   session.paused = false;
   session.currentZoneIndex = zoneIndex;
@@ -143,6 +146,151 @@ void SprinklerControl::requestDisable() {
   enqueue(CMD_DISABLE);
 }
 
+// ---- Chain API ----------------------------------------------------------------
+
+// HTTP context: stage the payload and enqueue; the session is built in chainStart()
+// inside the command task, strictly after any pending CMD_STOP_ALL drains (avoids the
+// stop->start race). Never write Sequence directly here.
+void SprinklerControl::requestChainStart(const uint8_t* order, uint8_t orderCount,
+                                         const uint8_t* durations, uint8_t gap) {
+  if (orderCount == 0 || orderCount > SKETCH_MAX_ZONES) return;
+  xSemaphoreTake(sprinklerStateMutex, portMAX_DELAY);
+  uint8_t slot = Timers.pendingHead;
+  Timers.pendingHead = (uint8_t)((slot + 1) & 3);  // ring of 4 — each request owns its own slot (I3)
+  auto& p = Timers.pendingChain[slot];
+  memset(p.order, 0, sizeof(p.order));
+  memset(p.durations, 0, sizeof(p.durations));
+  memcpy(p.order, order, orderCount);
+  memcpy(p.durations, durations, orderCount);
+  p.count = orderCount;
+  p.gap = gap;
+  xSemaphoreGive(sprinklerStateMutex);
+  enqueue(CMD_CHAIN_START, slot, 0);
+}
+
+void SprinklerControl::requestChainStop() {
+  // stop() (stop-all) is chain-aware: detaches the gap timer, clears adhoc, resets, fires chain:null
+  enqueue(CMD_STOP_ALL);
+}
+
+void SprinklerControl::requestChainUpdate(const uint8_t* order, uint8_t orderCount,
+                                          const uint8_t* durations) {
+  if (orderCount > SKETCH_MAX_ZONES) return;
+  xSemaphoreTake(sprinklerStateMutex, portMAX_DELAY);
+  uint8_t slot = Timers.pendingHead;
+  Timers.pendingHead = (uint8_t)((slot + 1) & 3);
+  auto& p = Timers.pendingChain[slot];
+  memset(p.order, 0, sizeof(p.order));
+  memset(p.durations, 0, sizeof(p.durations));
+  memcpy(p.order, order, orderCount);
+  memcpy(p.durations, durations, orderCount);
+  p.count = orderCount;
+  xSemaphoreGive(sprinklerStateMutex);
+  enqueue(CMD_CHAIN_UPDATE, slot, 0);
+}
+
+// Command task (mutex held): build the session and kick off zone 1.
+void SprinklerControl::chainStart(uint8_t slot) {
+  auto& p = Timers.pendingChain[slot & 3];
+  if (p.count == 0) return;
+  auto& s = Timers.Sequence;
+  if (s.active && !s.adhoc) return;  // a scheduled sequence owns the session — don't clobber it
+
+  stop();  // sync stop-all: engine off, all tickers off; if replacing a running chain, fires chain:null
+
+  s.epoch++;  // new chain instance — any stale Ticker/gap command carrying the old epoch is now rejected
+  s.adhoc = true;
+  s.active = true;
+  s.paused = false;
+  s.inGap = false;
+  s.currentZoneIndex = 0;
+  s.totalZones = p.count;
+  s.gapMinutes = p.gap;
+  memcpy(s.order, p.order, p.count);
+  memcpy(s.durations, p.durations, p.count);
+
+  enqueue(CMD_START, s.order[0], s.durations[0]);  // zone 1
+  fireEvent("chain", chainStateJSONLocked());
+}
+
+// Command task (mutex held): rewrite only the not-yet-started tail.
+void SprinklerControl::chainUpdate(uint8_t slot) {
+  auto& s = Timers.Sequence;
+  auto& p = Timers.pendingChain[slot & 3];
+  if (!s.adhoc || !s.active || p.count == 0) return;
+  if (p.order[0] != s.order[s.currentZoneIndex]) {
+    // Stale tail (client mirror lagged the live zone). Re-broadcast the authoritative state
+    // so the client that optimistically edited reconciles immediately instead of waiting (I4).
+    fireEvent("chain", chainStateJSONLocked());
+    return;
+  }
+
+  uint8_t base = s.currentZoneIndex;
+  uint8_t n = 0;
+  for (uint8_t i = 0; i < p.count && (base + i) < 6; i++) {  // clamped to the 6-element arrays
+    s.order[base + i] = p.order[i];
+    s.durations[base + i] = p.durations[i];
+    n++;
+  }
+  s.totalZones = base + n;  // S1: total = entries actually written (<= 6), never base + count unclamped
+  fireEvent("chain", chainStateJSONLocked());
+}
+
+// Command task (mutex held): a zone's Ticker expired (cmd.zone = expired zone, cmd.duration = epoch).
+void SprinklerControl::chainAdvance(uint8_t zone, uint8_t epoch) {
+  auto& s = Timers.Sequence;
+  if (!s.adhoc) { stop(zone); return; }  // cancelled between fire and dequeue — just stop the zone
+  if (epoch != s.epoch) return;          // stale Ticker from a replaced chain — ignore (do NOT stop: the
+                                         // zone id may now belong to the new chain, and stop() would tear it down)
+  if (s.currentZoneIndex >= s.totalZones || s.order[s.currentZoneIndex] != zone) {
+    stop(zone);  // stale Ticker for a non-current zone of THIS chain
+    return;
+  }
+
+  stop(zone, true);  // stop current zone (engine off; count->0). fromChain avoids the external-stop teardown
+  s.currentZoneIndex++;
+
+  if (s.currentZoneIndex >= s.totalZones) {  // finished
+    Timers.chainGapTimer.detach();
+    s.adhoc = false;
+    s.reset();
+    fireEvent("chain", "{\"done\":true}");  // finish is distinct from a user-stop (null)
+    return;
+  }
+
+  s.inGap = true;
+  Timers.chainGapTimer.detach();
+  Timers.chainGapTimer.once((float)s.gapMinutes * 60.0f, +[]() {
+    SequenceSession* seq = sprinklerActiveSequence;
+    uint8_t ep = seq ? seq->epoch : 0;
+    ZoneCommand cmd = { CMD_CHAIN_NEXT, 0, ep };  // start-next runs under the mutex in chainStartNext()
+    xQueueSend(sprinklerCommandQueue, &cmd, 0);
+  });
+
+  fireEvent("chain", chainStateJSONLocked());
+}
+
+// Command task (mutex held): gap elapsed, start the next zone (cmd.duration = epoch).
+void SprinklerControl::chainStartNext(uint8_t epoch) {
+  auto& s = Timers.Sequence;
+  if (!s.adhoc || epoch != s.epoch || s.currentZoneIndex >= s.totalZones) return;  // cancelled/replaced during the gap
+  s.inGap = false;
+  enqueue(CMD_START, s.order[s.currentZoneIndex], s.durations[s.currentZoneIndex]);
+  fireEvent("chain", chainStateJSONLocked());
+}
+
+String SprinklerControl::chainStateJSON() {
+  xSemaphoreTake(sprinklerStateMutex, portMAX_DELAY);
+  String j = chainStateJSONLocked();
+  xSemaphoreGive(sprinklerStateMutex);
+  return j;
+}
+
+String SprinklerControl::chainStateJSONLocked() {
+  if (!Timers.Sequence.adhoc) return "null";
+  return Timers.Sequence.toJSON();
+}
+
 // Sync API — direct execution
 void SprinklerControl::start(unsigned int zone, unsigned int duration = 0) {
   console.println("Starting timer " + (String)zone);
@@ -155,7 +303,7 @@ void SprinklerControl::start(unsigned int zone, unsigned int duration = 0) {
   fireEvent("state", Timers.toJSON(zone));
 }
 
-void SprinklerControl::stop(unsigned int zone) {
+void SprinklerControl::stop(unsigned int zone, bool fromChain) {
   console.println("Stopping timer " + (String)zone);
   if (Timers.isWatering(zone)) {
     if (Timers.count() == 1) {
@@ -166,10 +314,24 @@ void SprinklerControl::stop(unsigned int zone) {
     Timers.stop(zone);     // detach and remove timer
     fireEvent("state", Timers.toJSON(zone));
   }
+
+  // A7: an external stop (not the chain engine advancing) of the live chain zone ends the
+  // chain cleanly and notifies clients — otherwise the chain would be stranded active forever.
+  if (!fromChain && Timers.Sequence.adhoc &&
+      Timers.Sequence.currentZoneIndex < Timers.Sequence.totalZones &&
+      Timers.Sequence.order[Timers.Sequence.currentZoneIndex] == (uint8_t)zone) {
+    Timers.chainGapTimer.detach();
+    Timers.Sequence.adhoc = false;
+    Timers.Sequence.reset();
+    fireEvent("chain", "null");
+  }
 }
 
 void SprinklerControl::stop() {
   console.println("Stopping all");
+  bool wasAdhoc = Timers.Sequence.adhoc;  // capture before reset (B3)
+  Timers.chainGapTimer.detach();
+  Timers.Sequence.adhoc = false;
   Device.turnOff();
   Device.blink(0);
   for (size_t zone = 1; zone <= 6; zone++) {
@@ -178,6 +340,7 @@ void SprinklerControl::stop() {
   }
   Timers.Sequence.reset();
   fireEvent("state", Timers.toJSON());
+  if (wasAdhoc) fireEvent("chain", "null");  // B3: broadcast chain teardown to all clients
 }
 
 void SprinklerControl::pause(unsigned int zone) {
@@ -513,6 +676,10 @@ void SprinklerControl::processCommands() {
       case CMD_STOP_ALL: stop(); break;
       case CMD_ENABLE:   enable(); break;
       case CMD_DISABLE:  disable(); break;
+      case CMD_CHAIN_START:   chainStart(cmd.zone);                break;
+      case CMD_CHAIN_UPDATE:  chainUpdate(cmd.zone);               break;
+      case CMD_CHAIN_ADVANCE: chainAdvance(cmd.zone, cmd.duration); break;
+      case CMD_CHAIN_NEXT:    chainStartNext(cmd.duration);        break;
     }
     xSemaphoreGive(sprinklerStateMutex);
   }
@@ -522,6 +689,7 @@ SprinklerControl Sprinkler = SprinklerControl();
 
 void setupCommands() {
   Sprinkler.initCommandQueue();
+  sprinklerActiveSequence = &Sprinkler.Timers.Sequence;
 }
 
 void handleCommands() {

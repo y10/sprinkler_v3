@@ -126,12 +126,26 @@ class SprinklerControl {
   void requestEnable();
   void requestDisable();
 
+  // Chain API — HTTP-context enqueuers: stage payload + enqueue, never mutate Sequence directly
+  void requestChainStart(const uint8_t* order, uint8_t orderCount,
+                         const uint8_t* durations, uint8_t gap);
+  void requestChainStop();
+  void requestChainUpdate(const uint8_t* order, uint8_t orderCount,
+                          const uint8_t* durations);
+  String chainStateJSON();  // takes the mutex — safe to call from async_tcp context
+
   // Sync API — direct execution (called by processCommands under mutex)
   void start(unsigned int zone, unsigned int duration);
-  void stop(unsigned int zone);
+  void stop(unsigned int zone, bool fromChain = false);
   void stop();
   void pause(unsigned int zone);
   void resume(unsigned int zone);
+
+  // Chain sync workers — called by processCommands under the mutex
+  void chainStart(uint8_t slot);
+  void chainUpdate(uint8_t slot);
+  void chainAdvance(uint8_t zone, uint8_t epoch);
+  void chainStartNext(uint8_t epoch);
 
   bool isEnabled();
   void enable();
@@ -162,6 +176,8 @@ class SprinklerControl {
 
  private:
   std::map<const char *, std::vector<OnEvent>> onEventHandlers;
+
+  String chainStateJSONLocked();  // assumes caller holds sprinklerStateMutex
 
   void enqueue(ZoneAction action, uint8_t zone = 0, uint8_t duration = 0) {
     ZoneCommand cmd = { action, zone, duration };

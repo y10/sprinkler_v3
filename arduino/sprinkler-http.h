@@ -55,6 +55,10 @@ void setupHttp() {
     ws.textAll((String) "{ \"state\": " + (String)(strlen(event) ? event : "null") + "}");
   });
 
+  Sprinkler.on("chain", [](const char *event) {
+    ws.textAll((String) "{ \"chain\": " + (String)(strlen(event) ? event : "null") + "}");
+  });
+
   http.on("/", [&](AsyncWebServerRequest *rqt) { gzip(rqt, "text/html", SKETCH_INDEX_HTML_GZ, sizeof(SKETCH_INDEX_HTML_GZ)); });
   http.on("/favicon.png", [&](AsyncWebServerRequest *rqt) { gzip(rqt, "image/png", SKETCH_FAVICON_PNG_GZ, sizeof(SKETCH_FAVICON_PNG_GZ)); });
   http.on("/favicon.ico", [&](AsyncWebServerRequest *rqt) { rqt->redirect("/favicon.png"); });
@@ -115,6 +119,101 @@ void setupHttp() {
     }
     Sprinkler.requestResume(rel);
     ok(request);
+  });
+
+  // ---- Ad-hoc chain routes ----------------------------------------------------
+  // Body: { "order": [1,2,...], "durations": { "1": 15, "2": 20 }, "gap": 5 }
+  http.addHandler(new AsyncCallbackJsonWebHandler(
+      "/api/chain/start", [&](AsyncWebServerRequest *request, JsonVariant &jsonDoc) {
+        JsonObject obj = jsonDoc.as<JsonObject>();
+        if (!obj.containsKey("order") || !obj["order"].is<JsonArray>()) {
+          request->send(400, "application/json", "{\"error\":\"missing order\"}");
+          return;
+        }
+        JsonArray orderArr = obj["order"].as<JsonArray>();
+        if (orderArr.size() == 0 || orderArr.size() > SKETCH_MAX_ZONES) {
+          request->send(400, "application/json", "{\"error\":\"invalid order length\"}");
+          return;
+        }
+        uint8_t order[6] = {0};
+        uint8_t durations[6] = {0};
+        uint8_t seen = 0;
+        uint8_t i = 0;
+        JsonObject durObj = obj["durations"].as<JsonObject>();
+        for (JsonVariant v : orderArr) {
+          uint8_t z = v.as<uint8_t>();
+          if (z < 1 || z > SKETCH_MAX_ZONES) {
+            request->send(400, "application/json", "{\"error\":\"invalid zone\"}");
+            return;
+          }
+          if (seen & (1 << z)) {
+            request->send(400, "application/json", "{\"error\":\"duplicate zone\"}");
+            return;
+          }
+          seen |= (1 << z);
+          order[i] = z;
+          uint8_t d = durObj.containsKey(String(z)) ? durObj[String(z)].as<uint8_t>() : 15;
+          if (d == 0 || d > SKETCH_TIMER_DEFAULT_LIMIT) d = 15;
+          durations[i] = d;
+          i++;
+        }
+        uint8_t gap = obj.containsKey("gap") ? obj["gap"].as<uint8_t>() : 5;
+        if (gap > 30) gap = 30;
+        console.println("POST: /api/chain/start order=" + String(orderArr.size()));
+        Sprinkler.requestChainStart(order, orderArr.size(), durations, gap);
+        ok(request);
+      },
+      512));
+
+  // Mid-run tail rewrite. Body order[0] MUST be the currently-running zone.
+  http.addHandler(new AsyncCallbackJsonWebHandler(
+      "/api/chain/update", [&](AsyncWebServerRequest *request, JsonVariant &jsonDoc) {
+        JsonObject obj = jsonDoc.as<JsonObject>();
+        if (!obj.containsKey("order") || !obj["order"].is<JsonArray>()) {
+          request->send(400, "application/json", "{\"error\":\"missing order\"}");
+          return;
+        }
+        JsonArray orderArr = obj["order"].as<JsonArray>();
+        if (orderArr.size() > SKETCH_MAX_ZONES) {
+          request->send(400, "application/json", "{\"error\":\"invalid order length\"}");
+          return;
+        }
+        uint8_t order[6] = {0};
+        uint8_t durations[6] = {0};
+        uint8_t seen = 0;
+        uint8_t i = 0;
+        JsonObject durObj = obj["durations"].as<JsonObject>();
+        for (JsonVariant v : orderArr) {
+          uint8_t z = v.as<uint8_t>();
+          if (z < 1 || z > SKETCH_MAX_ZONES) {
+            request->send(400, "application/json", "{\"error\":\"invalid zone\"}");
+            return;
+          }
+          if (seen & (1 << z)) {
+            request->send(400, "application/json", "{\"error\":\"duplicate zone\"}");
+            return;
+          }
+          seen |= (1 << z);
+          order[i] = z;
+          uint8_t d = durObj.containsKey(String(z)) ? durObj[String(z)].as<uint8_t>() : 15;
+          if (d == 0 || d > SKETCH_TIMER_DEFAULT_LIMIT) d = 15;
+          durations[i] = d;
+          i++;
+        }
+        console.println("POST: /api/chain/update order=" + String(orderArr.size()));
+        Sprinkler.requestChainUpdate(order, orderArr.size(), durations);
+        ok(request);
+      },
+      512));
+
+  http.on("/api/chain/stop", ASYNC_HTTP_POST, [&](AsyncWebServerRequest *request) {
+    console.println("POST: /api/chain/stop");
+    Sprinkler.requestChainStop();
+    ok(request);
+  });
+
+  http.on("/api/chain/state", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {
+    json(request, Sprinkler.chainStateJSON());  // takes the mutex internally
   });
 
   http.on("/api/relay/{}/{}", ASYNC_HTTP_GET, [&](AsyncWebServerRequest *request) {

@@ -1,4 +1,4 @@
-import { String, Http, Wsc } from "../system";
+import { String, Http, Wsc, Router } from "../system";
 import { jQuery } from "../system/jquery";
 import { App } from "../system/app";
 
@@ -223,6 +223,7 @@ export class Zone extends HTMLElement {
 
   connectedCallback() {
     this.zone = App.zones(this.getAttribute("zone-id"));
+    this.chainMode = this.hasAttribute("chain");
     this.jQuery = jQuery(this).attachShadowTemplate(template, ($) => {
 
       this.PnlTimer = $('#timer');
@@ -268,14 +269,21 @@ export class Zone extends HTMLElement {
         (e.clicks > 1 || e.ticks > 500) ? this.onDoubleClick(e) : this.onSingleClick(e);
       });
 
-      if ($(this).inViewport()) {
+      if (this.chainMode) {
+        // Duration-edit-only: pre-fill the ring from the chain slot, no live state binding.
+        const dur = App.chain().getDuration(this.zone.id);
+        this.formatTime(dur * 60);
+        this.PnlTimer.removeClass("disabled").removeClass("started").removeClass("stopped");
+      } else if ($(this).inViewport()) {
         this.update().catch();
       }
     });
 
-    Wsc.on('state', this.onUpdate, this)
-      .on('disconnect', this.onDisconnect, this)
-      .on('connected', this.onConnected, this);
+    if (!this.chainMode) {
+      Wsc.on('state', this.onUpdate, this)
+        .on('disconnect', this.onDisconnect, this)
+        .on('connected', this.onConnected, this);
+    }
   }
 
   disconnectedCallback() {
@@ -301,12 +309,14 @@ export class Zone extends HTMLElement {
   }
 
   onSingleClick(e) {
+    if (this.chainMode) return;  // ring is duration-edit-only in chain mode (would strand the chain)
     if (this.timePassed > 0) {
       this.timerInterval ? this.pauseTimer() : this.resumeTimer();
     }
   }
 
   onDoubleClick(e) {
+    if (this.chainMode) return;  // ring is duration-edit-only in chain mode
     this.PnlTimer.addClass("clicked");
     setTimeout(() => this.PnlTimer.removeClass('clicked'), 1000);
     this.timerInterval
@@ -321,6 +331,13 @@ export class Zone extends HTMLElement {
     if (this.updatingDropdown) return;
 
     const minutes = parseInt(e.srcElement.value);
+
+    if (this.chainMode) {
+      // Update the chain slot duration instead of starting a solo run, then close the popup.
+      App.chain().setDuration(this.zone.id, minutes);
+      Router.goback();
+      return;
+    }
 
     if (minutes) {
       // Don't send stop then start - just start directly (firmware handles replacement)
